@@ -34,3 +34,17 @@ Las correcciones conservan versiones de los resultados de pruebas y de la eviden
 Cada usuario puede cambiar su contraseña en Mi cuenta. El cambio invalida las sesiones existentes. Tras actualizar a esta versión, las sesiones de versiones anteriores vuelven a pedir inicio de sesión.
 En Riesgos y cumplimiento puedes importar obligaciones desde un CSV UTF-8 con vista previa. Las referencias duplicadas dentro de un mismo marco impiden guardar el lote completo.
 Las cuentas Riesgos y Cumplimiento acceden a su registro y al catálogo común de controles. Cumplimiento también importa obligaciones. Supervisión conserva la trazabilidad completa y es el único perfil operativo que vincula controles con pruebas de auditoría.
+## XAMPP en localhost
+
+Si el proyecto completo está en `C:/xampp/htdocs/auditpro`, abre `http://localhost/auditpro/`. Apache redirige a `public/`. Los archivos `.htaccess` incluidos requieren `AllowOverride All` y bloquean el listado de carpetas, `private/` y los metadatos de Git. Conserva estos archivos al copiar o descomprimir el proyecto.
+
+Para pruebas por HTTP, define `AUDITPRO_DEV=1` y `AUDITPRO_CONFIG` en la configuración local de Apache y reinícialo. Por ejemplo, coloca este bloque en `httpd.conf` para el directorio público de AuditPro, con el archivo de configuración privado fuera de `htdocs`:
+
+```apache
+<Directory "C:/xampp/htdocs/auditpro/public">
+    SetEnv AUDITPRO_DEV 1
+    SetEnv AUDITPRO_CONFIG "C:/xampp/auditpro-config.php"
+</Directory>
+```
+
+Copia `private/config.example.php` a la ruta configurada, completa las credenciales SQL y el token, e inicia MySQL en XAMPP. La primera visita abrirá el instalador si la cuenta SQL de ejecución puede conectarse y el esquema aún no existe. También puedes abrir `http://localhost/auditpro/public/install.php`. Verifica que `/auditpro/private/schema.sql` responda con acceso denegado. En el servidor de la empresa, apunta el sitio directamente a `public/` y habilita HTTPS.
