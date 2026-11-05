@@ -12,6 +12,7 @@ require __DIR__ . '/../private/hours.php';
 require __DIR__ . '/../private/reminders.php';
 require __DIR__ . '/../private/revisions.php';
 require __DIR__ . '/../private/account.php';
+require __DIR__ . '/../private/obligation-import.php';
 start();
 $error = null;
 $user = null;
@@ -95,6 +96,12 @@ try {
             session_regenerate_id(true);
             $_SESSION['notice'] = 'Contraseña actualizada. Inicia sesión de nuevo.';
             redirect();
+        }
+        if (in_array($op,['preview_obligations','confirm_obligations','cancel_obligations'],true)) {
+            $destination = importObligations($pdo,$user,$op);
+            $pdo->commit();
+            if ($op !== 'preview_obligations') unset($_SESSION['obligation_import']);
+            redirect($destination);
         }
         $id = mutate($pdo,$user,$op);
         $pdo->commit();
@@ -180,6 +187,11 @@ if ($reportView) {
 }
 if (($_GET['view'] ?? '') === 'account' && !$audit) {
     require __DIR__ . '/../private/account-view.php';
+    endPage(true);
+    return;
+}
+if (($_GET['view'] ?? '') === 'import' && $manager && !$audit) {
+    require __DIR__ . '/../private/import-view.php';
     endPage(true);
     return;
 }

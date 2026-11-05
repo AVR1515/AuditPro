@@ -32,3 +32,4 @@ Para generar recordatorios internos, programa diariamente `php /ruta/a/AuditPro/
 Los indicadores del plan muestran horas previstas y registradas, hallazgos por severidad y antigüedad de acciones sin cerrar de informes emitidos. Usan los mismos filtros y permisos que la tabla del plan.
 Las correcciones conservan versiones de los resultados de pruebas y de la evidencia textual de acciones. La actualización recupera el último texto disponible de los expedientes anteriores y lo identifica como importado.
 Cada usuario puede cambiar su contraseña en Mi cuenta. El cambio invalida las sesiones existentes. Tras actualizar a esta versión, las sesiones de versiones anteriores vuelven a pedir inicio de sesión.
+En Riesgos y cumplimiento puedes importar obligaciones desde un CSV UTF-8 con vista previa. Las referencias duplicadas dentro de un mismo marco impiden guardar el lote completo.

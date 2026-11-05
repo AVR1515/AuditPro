@@ -21,6 +21,7 @@ $mappings = grcMappings($pdo);
 <button>Guardar riesgo</button></form></details><?php else: ?><p>Registra una unidad auditable para asociar riesgos.</p><?php endif; ?></section>
 
 <section><h2>Obligaciones</h2>
+<p><a href="index.php?view=import">Importar obligaciones desde CSV</a></p>
 <?php foreach ($obligations as $obligation): ?><article><h3><?= e($obligation['title']) ?></h3>
 <p><?= e($obligation['framework']) ?> · <?= e($obligation['reference_code']) ?> · <?= e($obligation['owner_name']) ?> · Revisión <?= e($obligation['review_on']) ?></p></article><?php endforeach; ?>
 <details><summary>Registrar obligación</summary><?php form('grc_obligation'); ?>
