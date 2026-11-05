@@ -161,7 +161,7 @@ if (!$audit):
         $items = query($pdo,"SELECT a.description,a.due_date,a.status,t.audit_id FROM actions a JOIN findings f ON f.id=a.finding_id JOIN tests t ON t.id=f.test_id JOIN audits d ON d.id=t.audit_id WHERE a.owner_id=? AND d.status IN ('emitida','cerrada') ORDER BY a.due_date",[$user['id']])->fetchAll();
     } else {
         $filters = planFilters();
-        $items = planRows($pdo,$user,$filters);
+        $items = planRows($pdo,$user,$filters,true);
         $completed = count(array_filter($items,fn(array $item): bool => $item['status'] === 'cerrada'));
         $issued = count(array_filter($items,fn(array $item): bool => in_array($item['status'],['emitida','cerrada'],true)));
         $export = '?' . http_build_query(['export'=>'plan'] + $filters);
@@ -175,6 +175,7 @@ if (!$audit):
 <label>Estado<select name="status"><option value="">Todos</option><?php options(STATES,$filters['status']); ?></select></label>
 <label>Riesgo<select name="risk"><option value="">Todos</option><?php options(LEVELS,$filters['risk']); ?></select></label>
 <button>Filtrar</button><a href="index.php">Limpiar</a><a href="<?= e($export) ?>">Exportar CSV</a></form>
+<?php require __DIR__ . '/../private/metrics-view.php'; ?>
 <?php endif; ?>
 <?php if (!$items): ?><p class="muted">Aún no hay registros asignados.</p><?php else: ?>
 <div class="table"><table><thead><tr><?php foreach ($responsible ? ['Acción','Vence','Estado'] : ['Auditoría','Entidad','Año','Riesgo','Estado'] as $column): ?><th scope="col"><?= e($column) ?></th><?php endforeach; ?></tr></thead><tbody>

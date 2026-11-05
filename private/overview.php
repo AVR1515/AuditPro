@@ -14,26 +14,51 @@ function planFilters(): array {
     ];
 }
 
-function planRows(PDO $pdo, array $user, array $filters): array {
+function planScope(array $user, array $filters): array {
     $where = [];
     $params = [];
     if (!manage($user)) {
-        $where[] = 'owner_id=?';
+        $where[] = 'd.owner_id=?';
         $params[] = $user['id'];
     }
     foreach (['year'=>'year','status'=>'status','risk'=>'risk'] as $key=>$column) {
         if ($filters[$key] !== '') {
-            $where[] = "$column=?";
+            $where[] = "d.$column=?";
             $params[] = $filters[$key];
         }
     }
     if ($filters['q'] !== '') {
-        $where[] = '(LOCATE(?,title)>0 OR LOCATE(?,entity)>0)';
+        $where[] = '(LOCATE(?,d.title)>0 OR LOCATE(?,d.entity)>0)';
         array_push($params,$filters['q'],$filters['q']);
     }
-    $sql = 'SELECT id,title,entity,year,risk,status FROM audits' .
-        ($where ? ' WHERE ' . implode(' AND ',$where) : '') . ' ORDER BY year DESC,id DESC';
-    return query($pdo,$sql,$params)->fetchAll();
+    return [$where ? ' WHERE ' . implode(' AND ',$where) : '',$params];
+}
+
+function planRows(PDO $pdo, array $user, array $filters, bool $withHours = false): array {
+    [$where,$params] = planScope($user,$filters);
+    $columns = 'd.id,d.title,d.entity,d.year,d.risk,d.status';
+    if ($withHours) {
+        $columns .= ', (SELECT planned_minutes FROM audit_schedule WHERE audit_id=d.id) AS planned,
+            (SELECT SUM(minutes) FROM audit_time WHERE audit_id=d.id) AS worked';
+    }
+    return query($pdo,"SELECT $columns FROM audits d$where ORDER BY d.year DESC,d.id DESC",$params)->fetchAll();
+}
+
+function planSeverity(PDO $pdo, array $user, array $filters): array {
+    [$where,$params] = planScope($user,$filters);
+    return query($pdo,"SELECT f.severity,COUNT(*) FROM findings f JOIN tests t ON t.id=f.test_id
+        JOIN audits d ON d.id=t.audit_id$where GROUP BY f.severity",$params)->fetchAll(PDO::FETCH_KEY_PAIR);
+}
+
+function planAging(PDO $pdo, array $user, array $filters, DateTimeImmutable $today): array {
+    [$where,$params] = planScope($user,$filters);
+    $where .= ($where ? ' AND ' : ' WHERE ') . "d.status='emitida' AND a.status<>'cerrada'";
+    $cutoff = fn (int $days): string => $today->modify("-$days days")->format('Y-m-d');
+    return query($pdo,"SELECT CASE WHEN a.due_date>=? THEN 'en_plazo' WHEN a.due_date>=? THEN 'hasta_30'
+        WHEN a.due_date>=? THEN 'hasta_60' ELSE 'mas_60' END AS bucket,COUNT(*)
+        FROM actions a JOIN findings f ON f.id=a.finding_id JOIN tests t ON t.id=f.test_id
+        JOIN audits d ON d.id=t.audit_id$where GROUP BY bucket",
+        [$cutoff(0),$cutoff(30),$cutoff(60),...$params])->fetchAll(PDO::FETCH_KEY_PAIR);
 }
 
 function planCsv(array $rows): never {

@@ -29,3 +29,4 @@ El plan anual guarda una versión histórica de los expedientes del año y exige
 El informe emitido tiene una vista de impresión y guardado como PDF mediante el navegador, disponible para supervisión y para el auditor del expediente.
 En el expediente, supervisión registra fechas y horas previstas, con justificación para cada reprogramación. El auditor registra tiempo de campo y el expediente muestra el total ejecutado.
 Para generar recordatorios internos, programa diariamente `php /ruta/a/AuditPro/private/remind.php` desde cron o el Programador de tareas de Windows con `AUDITPRO_CONFIG` y la misma zona horaria PHP que usa el servidor web. El proceso se puede repetir sin duplicar avisos del mismo vencimiento. El responsable los ve y marca como leídos en su bandeja.
+Los indicadores del plan muestran horas previstas y registradas, hallazgos por severidad y antigüedad de acciones sin cerrar de informes emitidos. Usan los mismos filtros y permisos que la tabla del plan.
