@@ -1,0 +1,50 @@
+CREATE TABLE IF NOT EXISTS users (
+ id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+ email VARCHAR(254) NOT NULL UNIQUE, name VARCHAR(160) NOT NULL,
+ password_hash VARCHAR(255) NOT NULL, role ENUM('admin','supervisor','auditor','responsable') NOT NULL,
+ active BOOLEAN NOT NULL DEFAULT TRUE
+) ENGINE=InnoDB;
+CREATE TABLE IF NOT EXISTS catalog (
+ category VARCHAR(40) NOT NULL, code VARCHAR(40) NOT NULL, label VARCHAR(120) NOT NULL,
+ PRIMARY KEY(category,code)
+) ENGINE=InnoDB;
+CREATE TABLE IF NOT EXISTS installation (
+ id TINYINT PRIMARY KEY, installed_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB;
+CREATE TABLE IF NOT EXISTS audits (
+ id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY, title VARCHAR(180) NOT NULL,
+ entity VARCHAR(180) NOT NULL, objective TEXT NOT NULL, year SMALLINT UNSIGNED NOT NULL,
+ risk ENUM('bajo','medio','alto','critico') NOT NULL, owner_id BIGINT UNSIGNED NOT NULL,
+ status ENUM('borrador','aprobada','en_campo','en_revision','emitida','cerrada') NOT NULL DEFAULT 'borrador',
+ report TEXT NULL, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+ FOREIGN KEY(owner_id) REFERENCES users(id)
+) ENGINE=InnoDB;
+CREATE TABLE IF NOT EXISTS tests (
+ id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY, audit_id BIGINT UNSIGNED NOT NULL,
+ title VARCHAR(180) NOT NULL, procedure_text TEXT NOT NULL, result_text TEXT NULL,
+ status ENUM('pendiente','documentada','revisada') NOT NULL DEFAULT 'pendiente',
+ prepared_by BIGINT UNSIGNED NULL, reviewed_by BIGINT UNSIGNED NULL,
+ FOREIGN KEY(audit_id) REFERENCES audits(id), FOREIGN KEY(prepared_by) REFERENCES users(id),
+ FOREIGN KEY(reviewed_by) REFERENCES users(id)
+) ENGINE=InnoDB;
+CREATE TABLE IF NOT EXISTS findings (
+ id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY, test_id BIGINT UNSIGNED NOT NULL,
+ title VARCHAR(180) NOT NULL, severity ENUM('bajo','medio','alto','critico') NOT NULL,
+ criterion TEXT NOT NULL, condition_text TEXT NOT NULL, cause TEXT NOT NULL, effect TEXT NOT NULL,
+ recommendation TEXT NOT NULL, FOREIGN KEY(test_id) REFERENCES tests(id)
+) ENGINE=InnoDB;
+CREATE TABLE IF NOT EXISTS actions (
+ id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY, finding_id BIGINT UNSIGNED NOT NULL,
+ owner_id BIGINT UNSIGNED NOT NULL, description TEXT NOT NULL, due_date DATE NOT NULL,
+ evidence TEXT NULL, status ENUM('abierta','en_verificacion','cerrada') NOT NULL DEFAULT 'abierta',
+ FOREIGN KEY(finding_id) REFERENCES findings(id), FOREIGN KEY(owner_id) REFERENCES users(id)
+) ENGINE=InnoDB;
+CREATE TABLE IF NOT EXISTS audit_log (
+ id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY, actor_id BIGINT UNSIGNED NOT NULL,
+ audit_id BIGINT UNSIGNED NULL, event VARCHAR(80) NOT NULL, detail VARCHAR(255) NOT NULL,
+ occurred_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+ FOREIGN KEY(actor_id) REFERENCES users(id), FOREIGN KEY(audit_id) REFERENCES audits(id)
+) ENGINE=InnoDB;
+CREATE TABLE IF NOT EXISTS login_limits (
+ bucket CHAR(64) PRIMARY KEY, attempts INT UNSIGNED NOT NULL, expires_at BIGINT UNSIGNED NOT NULL
+) ENGINE=InnoDB;
