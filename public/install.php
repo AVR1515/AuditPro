@@ -4,6 +4,7 @@ require __DIR__ . '/../private/bootstrap.php';
 start();
 $error = null;
 $ready = false;
+$installedNow = false;
 try {
     $config = config();
     if (empty($config['install_token'])) {
@@ -57,6 +58,7 @@ try {
                 query($installer, "INSERT INTO users(email,name,password_hash,role) VALUES (?,?,?,'admin')",
                     [$email, $name, password_hash($password, PASSWORD_DEFAULT)]);
                 $installer->exec('INSERT INTO installation(id) VALUES (1)');
+                $installedNow = true;
             }
             $installer->commit();
             $ready = true;
@@ -71,7 +73,7 @@ try {
     error_log('AuditPro instalación: ' . get_class($exception) . ' ' . $exception->getCode());
     $error = 'No se pudo completar la instalación. Revisa PHP, las credenciales y los permisos SQL con TI.';
 }
-if ($ready) http_response_code(403);
+if ($ready) http_response_code($installedNow ? 201 : 403);
 page('Instalación');
 errorBox($error);
 if ($ready): ?>

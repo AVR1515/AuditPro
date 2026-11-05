@@ -89,12 +89,29 @@ function redirect(string $url = 'index.php'): never {
     header('Location: ' . $url, true, 303);
     exit;
 }
-function page(string $title): void { ?>
+function page(string $title, ?array $user = null): void { ?>
 <!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title><?= e($title) ?> · AuditPro</title><link rel="stylesheet" href="app.css"><script src="theme.js" defer></script></head>
-<body><header><a href="index.php">AuditPro</a><label>Tema <select id="theme"><option value="">Sistema</option><option value="light">Claro</option><option value="dark">Oscuro</option></select></label></header><main><h1><?= e($title) ?></h1>
+<body><header><a href="index.php">AuditPro</a><label>Tema <select id="theme"><option value="">Sistema</option><option value="light">Claro</option><option value="dark">Oscuro</option></select></label></header>
+<?php if ($user): ?>
+<div class="shell"><aside><nav aria-label="Módulos de AuditPro">
+<p class="nav-caption">ESPACIO DE TRABAJO</p>
+<?php
+$sections = [''=>'Expedientes','inbox'=>'Bandeja'];
+if (in_array($user['role'],['admin','supervisor'],true)) $sections += ['plans'=>'Plan anual','universe'=>'Universo auditable','grc'=>'Riesgos y cumplimiento'];
+foreach ($sections as $key=>$label):
+    $href = 'index.php' . ($key ? '?view=' . $key : '');
+    $selected = ($_GET['view'] ?? '') === $key;
+?>
+<a href="<?= e($href) ?>"<?= $selected ? ' aria-current="page"' : '' ?>><?= e($label) ?></a>
+<?php endforeach; ?>
+<div class="nav-account"><strong><?= e($user['name']) ?></strong><span><?= e($user['role']) ?></span>
+<form method="post" action="index.php"><?= csrf() ?><input type="hidden" name="op" value="logout"><button>Salir</button></form></div>
+</nav></aside>
+<?php endif; ?>
+<main><h1><?= e($title) ?></h1>
 <?php }
-function endPage(): void { echo '</main></body></html>'; }
+function endPage(bool $authenticated = false): void { echo '</main>' . ($authenticated ? '</div>' : '') . '</body></html>'; }
 function errorBox(?string $error): void {
     if ($error) echo '<p class="error" role="alert">' . e($error) . '</p>';
 }

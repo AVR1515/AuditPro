@@ -26,3 +26,4 @@ CSS propio y JavaScript local. Para pruebas con el servidor embebido de PHP en l
 La bandeja calcula automáticamente acciones vencidas, próximas a vencer y en verificación dentro del ámbito de cada usuario. Para supervisión también muestra las revisiones de riesgos y obligaciones de los próximos siete días.
 Supervisión puede prorrogar acciones emitidas con una justificación. El historial conserva las fechas anterior y nueva.
 El plan anual guarda una versión histórica de los expedientes del año y exige que otra cuenta de supervisión la apruebe. La versión aprobada de número más alto se muestra como vigente.
+El informe emitido tiene una vista de impresión y guardado como PDF mediante el navegador, disponible para supervisión y para el auditor del expediente.

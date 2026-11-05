@@ -19,7 +19,7 @@ $next = $manager ? nextState($pdo,$audit) : null;
 <p><?= e($audit['entity']) ?> · <?= e($audit['year']) ?> · Riesgo <?= e($audit['risk']) ?> · <?= e(str_replace('_',' ',$state)) ?></p>
 <?php if ($evaluation): ?><p>Evaluación vinculada · <?= e($evaluation['methodology']) ?> · <?= e($evaluation['score']) ?>/25 · <?= e($evaluation['created_at']) ?></p><?php endif; ?>
 <?php copyBlock('Objetivo y alcance', $audit['objective']); ?>
-<?php if ($audit['report'] !== null): ?><h2>Informe emitido</h2><p class="copy"><?= e($audit['report']) ?></p><?php endif; ?>
+<?php if ($audit['report'] !== null): ?><h2>Informe emitido</h2><p class="copy"><?= e($audit['report']) ?></p><p><a href="index.php?id=<?= e($id) ?>&amp;view=report">Abrir informe para impresión</a></p><?php endif; ?>
 <?php if ($next): form('advance',$keys); ?>
 <?php if ($next === 'emitida'): ?><label>Informe final<textarea name="report" required maxlength="30000"></textarea></label><?php endif; ?>
 <button><?= e(['aprobada'=>'Aprobar auditoría','en_campo'=>'Iniciar trabajo de campo','en_revision'=>'Enviar a revisión','emitida'=>'Emitir informe','cerrada'=>'Cerrar auditoría'][$next]) ?></button></form>

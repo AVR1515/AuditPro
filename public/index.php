@@ -91,6 +91,11 @@ if ($user && isset($_GET['id'])) {
         $error = $exception->getMessage();
     }
 }
+$reportView = ($_GET['view'] ?? '') === 'report';
+if ($reportView && (!$audit || !$user || $user['role'] === 'responsable' || $audit['report'] === null)) {
+    http_response_code(404);
+    exit('Informe no disponible.');
+}
 function form(string $op, array $keys = [], bool $inline = false, bool $upload = false): void {
     echo '<form method="post"' . ($inline ? ' class="inline"' : '') . ($upload ? ' enctype="multipart/form-data"' : '') . '>' . csrf();
     foreach (['op'=>$op] + $keys as $name=>$value) {
@@ -106,7 +111,7 @@ function people(array $users): void {
 function copyBlock(string $label, ?string $value): void {
     echo '<p class="copy"><strong>' . e($label) . '</strong> ' . e($value) . '</p>';
 }
-page($audit && $user['role'] !== 'responsable' ? $audit['title'] : ($user ? 'Área de trabajo' : 'Iniciar sesión'));
+page($audit && $user['role'] !== 'responsable' ? $audit['title'] : ($user ? 'Área de trabajo' : 'Iniciar sesión'),$user);
 errorBox($error);
 if (!$user): ?>
 <section><?php form('login'); ?>
@@ -115,29 +120,33 @@ if (!$user): ?>
 <button>Entrar</button></form></section>
 <?php if ($error && !isset($pdo)): ?><a href="install.php">Instalar AuditPro</a><?php endif;
 endPage(); return; endif; ?>
-<nav><a href="index.php">Área de trabajo</a><a href="index.php?view=inbox">Bandeja</a><?php if (manage($user)): ?><a href="index.php?view=universe">Universo auditable</a><a href="index.php?view=plans">Plan anual</a><a href="index.php?view=grc">Riesgos y cumplimiento</a><?php endif; ?><span><?= e($user['name']) ?> · <?= e($user['role']) ?></span><?php form('logout',[],true); ?><button>Salir</button></form></nav>
 <?php
 $manager = manage($user);
 $auditor = $user['role'] === 'auditor';
 $responsible = $user['role'] === 'responsable';
 if (($_GET['view'] ?? '') === 'universe' && $manager && !$audit) {
     require __DIR__ . '/../private/universe-view.php';
-    endPage();
+    endPage(true);
     return;
 }
 if (($_GET['view'] ?? '') === 'grc' && $manager && !$audit) {
     require __DIR__ . '/../private/grc-view.php';
-    endPage();
+    endPage(true);
     return;
 }
 if (($_GET['view'] ?? '') === 'inbox' && !$audit) {
     require __DIR__ . '/../private/inbox-view.php';
-    endPage();
+    endPage(true);
     return;
 }
 if (($_GET['view'] ?? '') === 'plans' && $manager && !$audit) {
     require __DIR__ . '/../private/plans-view.php';
-    endPage();
+    endPage(true);
+    return;
+}
+if ($reportView) {
+    require __DIR__ . '/../private/report.php';
+    endPage(true);
     return;
 }
 if (!$audit):
@@ -183,4 +192,4 @@ if (!$audit):
 <label>Contraseña inicial<input name="password" type="password" autocomplete="new-password" minlength="12" required></label>
 <label>Rol<select name="role"><?php options(ROLES); ?></select></label><button>Crear usuario</button></form></section>
 <?php endif; ?></div>
-<?php else: require __DIR__ . '/../private/detail.php'; endif; endPage();
+<?php else: require __DIR__ . '/../private/detail.php'; endif; endPage(true);

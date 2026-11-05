@@ -16,7 +16,7 @@ function accessible(PDO $pdo, array $user, int $id, bool $lock = false): array {
     $audit = query($pdo, 'SELECT * FROM audits WHERE id=?' . ($lock ? ' FOR UPDATE' : ''), [$id])->fetch();
     if (!$audit) throw new DomainException('Expediente no disponible.');
     if (manage($user) || ($user['role'] === 'auditor' && (int) $audit['owner_id'] === (int) $user['id'])) return $audit;
-    if ($user['role'] === 'responsable' && query($pdo, 'SELECT 1 FROM actions a JOIN findings f ON f.id=a.finding_id JOIN tests t ON t.id=f.test_id WHERE t.audit_id=? AND a.owner_id=? LIMIT 1', [$id,$user['id']])->fetchColumn()) return $audit;
+    if ($user['role'] === 'responsable' && in_array($audit['status'],['emitida','cerrada'],true) && query($pdo, 'SELECT 1 FROM actions a JOIN findings f ON f.id=a.finding_id JOIN tests t ON t.id=f.test_id WHERE t.audit_id=? AND a.owner_id=? LIMIT 1', [$id,$user['id']])->fetchColumn()) return $audit;
     throw new DomainException('Expediente no disponible.');
 }
 function nextState(PDO $pdo, array $audit): ?string {

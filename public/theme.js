@@ -10,3 +10,4 @@ picker.addEventListener('change', () => {
   applyTheme();
   try { localStorage.setItem('auditpro-theme', picker.value); } catch {}
 });
+document.getElementById('print-report')?.addEventListener('click', () => window.print());

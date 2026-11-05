@@ -36,7 +36,7 @@ function listAttachments(PDO $pdo, string $kind, int $parent): void {
 }
 
 function downloadAttachment(PDO $pdo, array $user, int $id): never {
-    $file = query($pdo,'SELECT b.filename,b.bytes,b.sha256,b.content,COALESCE(t.audit_id,at.audit_id) AS audit_id,
+    $file = query($pdo,'SELECT b.filename,b.bytes,b.sha256,COALESCE(t.audit_id,at.audit_id) AS audit_id,
         a.owner_id AS action_owner,d.status
         FROM attachments b LEFT JOIN tests t ON t.id=b.test_id LEFT JOIN actions a ON a.id=b.action_id
         LEFT JOIN findings f ON f.id=a.finding_id LEFT JOIN tests at ON at.id=f.test_id
@@ -46,13 +46,14 @@ function downloadAttachment(PDO $pdo, array $user, int $id): never {
         throw new DomainException('Archivo no disponible.');
     }
     accessible($pdo,$user,(int) $file['audit_id']);
-    if (!hash_equals($file['sha256'],hash('sha256',$file['content']))) {
+    $content = query($pdo,'SELECT content FROM attachments WHERE id=?',[$id])->fetchColumn();
+    if (!is_string($content) || strlen($content) !== (int) $file['bytes'] || !hash_equals($file['sha256'],hash('sha256',$content))) {
         throw new RuntimeException('La huella de evidencia no coincide.');
     }
     record($pdo,(int) $user['id'],(int) $file['audit_id'],'evidencia_descargada',(string) $id);
     header('Content-Type: application/octet-stream');
     header('Content-Disposition: attachment; filename="' . $file['filename'] . '"');
     header('Content-Length: ' . $file['bytes']);
-    echo $file['content'];
+    echo $content;
     exit;
 }
