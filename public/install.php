@@ -38,7 +38,7 @@ try {
             foreach (explode(';', $schema) as $sql) {
                 if (trim($sql) !== '') $installer->exec($sql);
             }
-            foreach (['upgrade-002.sql','upgrade-003.sql'] as $file) {
+            foreach (['upgrade-002.sql','upgrade-003.sql','upgrade-004.sql'] as $file) {
                 $migration = file_get_contents(__DIR__ . '/../private/' . $file);
                 if ($migration === false) throw new RuntimeException('Falta un archivo del esquema.');
                 foreach (explode(';', $migration) as $sql) {

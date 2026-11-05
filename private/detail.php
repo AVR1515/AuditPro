@@ -9,6 +9,10 @@ if (!$responsible):
 $tests = query($pdo,'SELECT * FROM tests WHERE audit_id=? ORDER BY id',[$id])->fetchAll();
 $findings = query($pdo,'SELECT f.*,t.title AS test_title FROM findings f JOIN tests t ON t.id=f.test_id WHERE t.audit_id=? ORDER BY f.id',[$id])->fetchAll();
 $evaluation = query($pdo,'SELECT r.* FROM audit_assessment_links a JOIN risk_assessments r ON r.id=a.assessment_id WHERE a.audit_id=?',[$id])->fetch();
+$testControls = [];
+foreach (query($pdo,'SELECT m.test_id,c.title FROM grc_control_tests m JOIN grc_controls c ON c.id=m.control_id JOIN tests t ON t.id=m.test_id WHERE t.audit_id=? ORDER BY c.title',[$id]) as $control) {
+    $testControls[$control['test_id']][] = $control['title'];
+}
 $next = $manager ? nextState($pdo,$audit) : null;
 ?>
 <section>
@@ -27,6 +31,7 @@ $next = $manager ? nextState($pdo,$audit) : null;
 <?php foreach ($tests as $test): $testKeys = $keys + ['test_id'=>$test['id']]; ?>
 <article><h3><?= e($test['title']) ?></h3><p class="muted"><?= e($test['status']) ?></p>
 <?php copyBlock('Procedimiento',$test['procedure_text']); if ($test['result_text'] !== null) copyBlock('Resultado',$test['result_text']); ?>
+<?php if (!empty($testControls[$test['id']])) copyBlock('Controles vinculados',implode(' · ',$testControls[$test['id']])); ?>
 <?php listAttachments($pdo,'test',(int) $test['id']); ?>
 <?php if ($auditor && $state === 'en_campo' && $test['status'] !== 'revisada'): ?>
 <details><summary>Adjuntar evidencia de prueba</summary><?php form('attach_test',$testKeys,false,true); ?>

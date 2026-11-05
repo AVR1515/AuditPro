@@ -5,6 +5,7 @@ require __DIR__ . '/../private/workflow.php';
 require __DIR__ . '/../private/attachments.php';
 require __DIR__ . '/../private/overview.php';
 require __DIR__ . '/../private/universe.php';
+require __DIR__ . '/../private/grc.php';
 start();
 $error = null;
 $user = null;
@@ -55,6 +56,11 @@ try {
             $pdo->commit();
             redirect('index.php?view=universe');
         }
+        if (in_array($op,GRC_OPS,true)) {
+            saveGrc($pdo,$user,$op);
+            $pdo->commit();
+            redirect('index.php?view=grc');
+        }
         $id = mutate($pdo,$user,$op);
         $pdo->commit();
         redirect($id ? 'index.php?id=' . $id : 'index.php');
@@ -102,13 +108,18 @@ if (!$user): ?>
 <button>Entrar</button></form></section>
 <?php if ($error && !isset($pdo)): ?><a href="install.php">Instalar AuditPro</a><?php endif;
 endPage(); return; endif; ?>
-<nav><a href="index.php">Área de trabajo</a><?php if (manage($user)): ?><a href="index.php?view=universe">Universo auditable</a><?php endif; ?><span><?= e($user['name']) ?> · <?= e($user['role']) ?></span><?php form('logout',[],true); ?><button>Salir</button></form></nav>
+<nav><a href="index.php">Área de trabajo</a><?php if (manage($user)): ?><a href="index.php?view=universe">Universo auditable</a><a href="index.php?view=grc">Riesgos y cumplimiento</a><?php endif; ?><span><?= e($user['name']) ?> · <?= e($user['role']) ?></span><?php form('logout',[],true); ?><button>Salir</button></form></nav>
 <?php
 $manager = manage($user);
 $auditor = $user['role'] === 'auditor';
 $responsible = $user['role'] === 'responsable';
 if (($_GET['view'] ?? '') === 'universe' && $manager && !$audit) {
     require __DIR__ . '/../private/universe-view.php';
+    endPage();
+    return;
+}
+if (($_GET['view'] ?? '') === 'grc' && $manager && !$audit) {
+    require __DIR__ . '/../private/grc-view.php';
     endPage();
     return;
 }
