@@ -10,7 +10,7 @@ function config(): array {
     if (!$path || !is_file($path)) {
         throw new RuntimeException('Configura AUDITPRO_CONFIG con la ruta del archivo privado.');
     }
-    $root = realpath($_SERVER['DOCUMENT_ROOT'] ?? '');
+    $root = realpath(PHP_SAPI === 'cli' ? __DIR__ . '/../public' : ($_SERVER['DOCUMENT_ROOT'] ?? ''));
     $resolved = realpath($path);
     if (!$root || !$resolved || str_starts_with(strtolower($resolved), strtolower(rtrim($root, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR))) {
         throw new RuntimeException('El archivo de configuración debe estar fuera de la raíz pública.');

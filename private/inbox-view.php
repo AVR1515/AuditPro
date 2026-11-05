@@ -3,7 +3,14 @@ $today = new DateTimeImmutable('today');
 $tasks = actionInbox($pdo,$user);
 $overdue = count(array_filter($tasks,fn(array $task): bool => inboxStatus($task,$today) === 'Vencida'));
 $verification = count(array_filter($tasks,fn(array $task): bool => $task['status'] === 'en_verificacion'));
+$reminders = unreadReminders($pdo,$user);
 ?>
+<?php if ($reminders): ?><section><h2>Recordatorios sin leer</h2><ul>
+<?php foreach ($reminders as $reminder): ?><li>
+<a href="index.php?id=<?= e($reminder['audit_id']) ?>#action-<?= e($reminder['action_id']) ?>"><?= e($reminder['description']) ?></a>
+· <?= $reminder['kind'] === 'vencida' ? 'Vencida' : 'Próxima a vencer' ?> · <?= e($reminder['due_date']) ?>
+<?php form('read_reminder',['reminder'=>$reminder['id']],true); ?><button>Marcar como leído</button></form></li><?php endforeach; ?>
+</ul></section><?php endif; ?>
 <section><h2>Seguimiento de acciones</h2>
 <dl class="metrics"><div><dt>Acciones abiertas</dt><dd><?= count($tasks) ?></dd></div><div><dt>Vencidas</dt><dd><?= $overdue ?></dd></div><div><dt>En verificación</dt><dd><?= $verification ?></dd></div></dl>
 <?php if (!$tasks): ?><p class="muted">Sin acciones pendientes en tu ámbito.</p><?php else: ?>

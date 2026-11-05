@@ -9,6 +9,7 @@ require __DIR__ . '/../private/grc.php';
 require __DIR__ . '/../private/inbox.php';
 require __DIR__ . '/../private/plans.php';
 require __DIR__ . '/../private/hours.php';
+require __DIR__ . '/../private/reminders.php';
 start();
 $error = null;
 $user = null;
@@ -68,6 +69,11 @@ try {
             savePlan($pdo,$user,$op);
             $pdo->commit();
             redirect('index.php?view=plans');
+        }
+        if ($op === 'read_reminder') {
+            markReminderRead($pdo,$user,positiveId('reminder'));
+            $pdo->commit();
+            redirect('index.php?view=inbox');
         }
         $id = mutate($pdo,$user,$op);
         $pdo->commit();
