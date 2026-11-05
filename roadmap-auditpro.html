@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light dark"><title>AuditPro · Roadmap</title>
+<style>
+:root{color-scheme:light;--bg:#eef3f9;--card:#fff;--ink:#182640;--muted:#526580;--line:#d7e0ec;--accent:#2458bc;--soft:#e6efff}
+@media(prefers-color-scheme:dark){:root:not([data-theme]){color-scheme:dark;--bg:#0e1524;--card:#172236;--ink:#e7eefb;--muted:#a8bad5;--line:#33435d;--accent:#9cc0ff;--soft:#253b60}}
+:root[data-theme=dark]{color-scheme:dark;--bg:#0e1524;--card:#172236;--ink:#e7eefb;--muted:#a8bad5;--line:#33435d;--accent:#9cc0ff;--soft:#253b60}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 system-ui,sans-serif}a{color:var(--accent)}header{background:#142541;color:#f4f7fd;padding:1rem clamp(1rem,5vw,4rem);display:flex;justify-content:space-between;align-items:center;gap:1rem}header strong{letter-spacing:.04em}header select{background:#21395e;color:#fff;border-color:#647fa6}.layout{max-width:1320px;margin:auto;padding:clamp(1rem,3vw,2.5rem);display:grid;grid-template-columns:220px minmax(0,1fr);gap:2rem}aside{align-self:start;position:sticky;top:1rem}nav{display:grid;gap:.4rem}button,select,input{font:inherit;color:inherit;background:var(--card);border:1px solid var(--line);border-radius:.55rem;padding:.55rem .75rem}button,select,summary,input[type=checkbox]{cursor:pointer}button{text-align:left}button[aria-pressed=true],.badge{background:var(--soft);color:var(--accent)}:focus-visible{outline:3px solid var(--accent);outline-offset:3px}.hero,.panel,article{background:var(--card);border:1px solid var(--line);border-radius:1rem;padding:clamp(1rem,3vw,2rem)}.hero{border-top:5px solid var(--accent)}h1,h2,h3,p{margin:0 0 .65rem}h1{font-size:clamp(2rem,5vw,3.5rem);line-height:1.08;letter-spacing:-.045em}.eyebrow,.meta{font-size:.85rem;color:var(--muted)}.eyebrow{font-weight:750;letter-spacing:.12em;text-transform:uppercase}.badge{border-radius:99px;padding:.2rem .7rem;font-weight:700;font-size:.8rem}progress{width:100%;accent-color:var(--accent)}.toolbar{display:flex;flex-wrap:wrap;gap:.75rem;margin:1rem 0}.toolbar label{display:grid;gap:.25rem;font-size:.9rem}.toolbar label:first-child{flex:1;min-width:12rem}.cards{display:grid;gap:.75rem;margin-bottom:1.5rem}article{padding:1rem 1.25rem;scroll-margin-top:1rem}summary{font-weight:750;margin:.55rem 0}article p{margin-top:.8rem}article label{display:inline-flex;align-items:center;gap:.45rem}.panel ul{padding-left:1.25rem}.panel{margin-top:1rem}footer{margin-top:1rem;color:var(--muted)}@media(max-width:760px){.layout{display:block}aside{position:static;margin-bottom:1rem}nav{display:flex;flex-wrap:wrap}header{flex-wrap:wrap}}
+</style></head><body>
+<header><strong>AuditPro / Producto</strong><label>Tema <select id="theme"><option value="">Sistema</option><option value="light">Claro</option><option value="dark">Oscuro</option></select></label></header>
+<div class="layout"><aside><p class="eyebrow">Fases</p><nav id="phases" aria-label="Fases del roadmap"></nav></aside>
+<main><section class="hero"><p class="eyebrow">Plan de implementación · 20 pasos</p><h1>Roadmap de AuditPro</h1><p>Auditoría interna, riesgos y cumplimiento en el servidor de cada cliente. PHP, SQL, CSS propio y JavaScript local, sin APIs ni CDN.</p><p><label for="progress" id="meter"></label></p><progress id="progress" max="20" value="0"></progress><p class="meta" id="storage">El avance y el tema se guardan en este navegador.</p></section>
+<section aria-label="Pasos del roadmap"><div class="toolbar"><label>Buscar<input id="query" type="search" placeholder="Instalador, evidencias, permisos…"></label><label>Entrega<select id="release"><option value="">Todas</option><option>MVP</option><option>V1</option><option>V2</option></select></label><label>Avance<select id="status"><option value="">Todos</option><option value="ready">Listos para iniciar</option><option value="blocked">Con dependencias pendientes</option><option value="done">Completados</option></select></label></div><p id="count" class="meta" role="status"></p><div id="cards" class="cards"></div></section>
+<section class="panel"><h2>Entregas y recorrido principal</h2><ul><li><strong>MVP</strong> · Instalación local y una auditoría completa, desde el universo hasta el cierre verificado.</li><li><strong>V1</strong> · Riesgos, controles, cumplimiento y automatización local sobre el expediente compartido.</li><li><strong>V2</strong> · Planificación multianual, gestión de capacidad y revisión de calidad.</li></ul><p>Plan aprobado → trabajo → evidencia y revisión → informe → acción correctiva → verificación de cierre.</p></section>
+<section class="panel"><h2>Referencias de producto</h2><p><strong>TeamMate+</strong> organiza la auditoría desde la evaluación y el plan basado en riesgos hasta el trabajo de campo, los informes y el seguimiento. Su planificación multianual y sus reglas configurables inspiran los pasos 09, 15 y 20. <a href="https://www.wolterskluwer.com/en/solutions/teammate/internal-audit-management-software">Ciclo de auditoría</a> · <a href="https://www.wolterskluwer.com/en/news/wolters-kluwer-teammate-capabilities-enhance-internal-audit-efficiency-data-quality">Planificación y reglas</a></p><p><strong>Optro</strong> conecta el trabajo operativo con controles, solicitudes y evidencia, y reutiliza el estado de los controles en cumplimiento. Los pasos 10, 13, 14 y 15 trasladan esos patrones a formularios y automatización local. <a href="https://optro.ai/product/operational-audit">Auditoría operativa</a> · <a href="https://optro.ai/product/controls-management">Gestión de controles</a> · <a href="https://optro.ai/product/compliance-control">Cumplimiento</a></p><p class="meta">La navegación lateral, las tablas de trabajo y las fichas de detalle son decisiones de diseño propuestas a partir de los flujos públicos de ambos productos.</p></section>
+<footer>AuditPro · Hoja de ruta técnica y funcional</footer></main></div>
+<noscript>Activa JavaScript para consultar y filtrar los pasos.</noscript>
+<script>
+'use strict';
+const rows = [["01","Fundamentos","MVP","Producto","—","Definir alcance y operación","Mapear auditor jefe, supervisor, auditor, dueño de acción, riesgo, cumplimiento, comité y administrador. Acordar segregación, estados, severidades, SLA, retención, volúmenes y alcance por entidad.","Cada rol valida un recorrido y se aprueba la matriz de permisos y transiciones."],["02","Fundamentos","MVP","UX","01","Diseñar navegación y temas","Barra lateral por módulos, cabecera con bandeja y búsqueda, fichas con pestañas, tablas filtrables y panel de detalle. Definir variables CSS para ambos temas, modo sistema y preferencia persistente. HTML semántico, CSS propio y JS local.","Prototipos claros y oscuros cubren formularios, tablas, estados, foco, teclado, móvil y contraste AA."],["03","Fundamentos","MVP","Arquitectura","01","Diseñar modelo y arquitectura","PHP con páginas renderizadas y formularios POST, PDO y MySQL como base propuesta. Separar dominio, vistas, acceso SQL y almacenamiento privado. Modelar entidades, usuarios, roles, universo, planes, trabajos, pruebas, evidencias, hallazgos, acciones, riesgos, controles y obligaciones. Usar claves foráneas, índices, versiones y estados explícitos.","Se puede trazar una obligación o riesgo hasta el control, prueba, evidencia, hallazgo y acción sin duplicar registros."],["04","Instalación y seguridad","MVP","Plataforma","03","Construir install.php","Restringir acceso inicial mediante secreto de despliegue fuera del directorio público. Validar PHP, PDO MySQL, conexión, HTTPS y permisos. Crear BD utf8mb4 con credencial temporal autorizada, ejecutar migraciones versionadas y configurar una cuenta SQL de ejecución con privilegios mínimos. Proteger configuración y archivos fuera de la raíz pública.","En un servidor limpio el instalador crea la base. Una interrupción se puede reintentar sin borrar datos ni repetir cambios ya aplicados."],["05","Instalación y seguridad","MVP","Plataforma","04","Precargar catálogos y crear admin","Sembrar roles, permisos, severidades, estados, escalas y plantillas iniciales mediante claves estables. Separar demo ficticia opcional. Pedir correo y contraseña del administrador, aplicar password_hash, registrar instalación y bloquear install.php tras confirmar todos los pasos. No guardar credenciales temporales.","Una segunda visita rechaza la instalación. El admin inicia sesión y los catálogos aparecen una sola vez."],["06","Instalación y seguridad","MVP","Seguridad","03,05","Implementar identidad y permisos","Sesiones PHP con regeneración, cookies seguras, cierre de sesión, limitación de intentos y recuperación administrativa. Verificar rol y ámbito en cada lectura, edición, descarga y exportación. Proteger con CSRF, consultas preparadas y salida escapada. Separar preparación y aprobación.","Dos usuarios de entidades distintas no pueden acceder a registros entre sí por URL ni aprobar su propio trabajo."],["07","Instalación y seguridad","MVP","Seguridad","06","Proteger evidencias y bitácora","Guardar archivos fuera de webroot, validar tamaño y MIME, generar identificadores aleatorios, calcular hash y versionar. Registrar actor, fecha, objeto, transición y cambios relevantes en una bitácora con escritura restringida. Aplicar retención y copia coordinada de SQL y archivos.","Se restaura un expediente con las versiones y hashes intactos. Una descarga sin autorización se rechaza."],["08","Auditoría","MVP","Auditoría","02,06","Registrar universo y evaluar riesgo","Configurar unidades, procesos y entidades auditables, propietarios y ciclos. Evaluar probabilidad, impacto, controles y cobertura histórica. Versionar metodología, puntaje y justificación.","Se reproduce el puntaje de una evaluación anterior después de cambiar la escala."],["09","Auditoría","MVP","Auditoría","08","Crear y aprobar el plan","Priorizar por riesgo, incluir auditorías obligatorias y estimar horas, calendario y disponibilidad. Guardar versiones del plan anual, aprobaciones y reprogramaciones con motivo.","El supervisor ve brechas de cobertura y sobreasignación antes de aprobar una versión."],["10","Auditoría","MVP","Auditoría","07,09","Preparar y ejecutar un trabajo","Crear expediente desde el plan, definir alcance, objetivos y equipo, reutilizar programas, enlazar riesgos y controles, registrar muestras, procedimientos, resultados, horas y evidencias. Incorporar solicitudes, comentarios y revisión con devolución.","Una prueba se devuelve, corrige y firma manteniendo la evidencia previa y su historial."],["11","Auditoría","MVP","Auditoría","10","Formalizar hallazgos e informes","Registrar criterio, condición, causa, efecto, recomendación y severidad. Conciliar con el área, documentar desacuerdos y aprobar una versión del informe. Ofrecer impresión a PDF desde el navegador y CSV seguro.","El informe aprobado conserva su versión y se puede rastrear cada hallazgo hasta su prueba."],["12","Auditoría","MVP","Auditoría","11","Dar seguimiento a acciones","Asignar responsable, vencimiento y evidencia esperada. Permitir prórrogas justificadas, revisión de efectividad, reapertura y aceptación formal del riesgo. Automatizar avisos internos y escalamiento mediante tarea programada local con prevención de duplicados.","Un responsable carga evidencia y un verificador independiente decide el cierre. Los vencimientos aparecen en la bandeja."],["13","Riesgos y cumplimiento","V1","Riesgos","08,12","Gestionar riesgos y controles","Añadir registro de riesgos inherentes y residuales, apetito, dueños, controles, evaluaciones periódicas, tratamientos e indicadores. Reusar riesgos y controles del universo con relaciones explícitas.","Cambiar un control permite identificar procesos, trabajos y obligaciones afectados sin alterar evaluaciones históricas."],["14","Riesgos y cumplimiento","V1","Cumplimiento","13","Gestionar obligaciones y políticas","Importar catálogos CSV con previsualización, mapear requisitos a controles, asignar responsables y frecuencias, registrar excepciones, atestaciones, evidencias y revisiones de políticas.","Un mismo control documenta varios requisitos y cada requisito muestra brechas, pruebas y evidencias vigentes."],["15","Riesgos y cumplimiento","V1","Automatización","12,14","Unificar tareas y solicitudes","Generar tareas por fechas y cambios de estado. Configurar plantillas, responsables, recordatorios internos, escalamiento, vencimientos y solicitudes de evidencia acotadas por ámbito.","Reejecutar el programador después de un fallo mantiene una sola tarea por evento y deja rastro operativo."],["16","Validación y lanzamiento","MVP","Informes","12","Preparar tableros y exportaciones","Mostrar ejecución del plan, horas, cobertura de riesgo, hallazgos por severidad y antigüedad de acciones. Definir fórmula, periodo y población de cada indicador, filtros y desglose autorizado.","Cada total concilia con el detalle y los CSV respetan el ámbito y neutralizan fórmulas."],["17","Validación y lanzamiento","MVP","QA","07,16","Probar y pilotar el ciclo completo","Verificar instalación limpia y reintento, permisos negativos, carga de archivos, concurrencia, restauración, accesibilidad y rendimiento. Ejecutar una auditoría piloto desde plan hasta cierre y corregir defectos.","Auditoría y TI firman el piloto con evidencias, restauración comprobada y defectos críticos resueltos."],["18","Validación y lanzamiento","MVP","Operaciones","17","Empaquetar e instalar en cliente","Entregar paquete PHP, SQL y recursos locales con guía Apache/Nginx, TLS, configuración, tareas programadas, respaldos y actualización versionada. Probar migración sobre copia y documentar restauración y soporte.","TI instala en entorno aislado de Internet, actualiza desde una versión anterior de prueba y restaura con el tiempo acordado."],["19","Validación y lanzamiento","V1","QA","14,15,18","Liberar riesgos y cumplimiento","Pilotar el expediente compartido entre las tres funciones. Medir cobertura, tiempos de revisión, vencimientos y duplicación de evidencia. Validar permisos cruzados, importación y reglas de retención.","Las tres áreas aprueban un caso de punta a punta que incluye una obligación, un riesgo, una prueba y una acción verificada."],["20","Evolución","V2","Producto","19","Ampliar capacidad y control de calidad","Agregar planificación multianual, capacidad por perfil, revisiones de calidad, atestaciones masivas y analítica de archivos importados localmente según resultados del piloto.","El comité compara escenarios multianuales y cada cambio queda versionado con impacto en recursos y cobertura."]];
+const byId = id => document.getElementById(id);
+function load(key, fallback) {
+  try { return JSON.parse(localStorage.getItem('auditpro-roadmap-' + key)) ?? fallback; }
+  catch { return fallback; }
+}
+function save(key, value) {
+  try { localStorage.setItem('auditpro-roadmap-' + key, JSON.stringify(value)); }
+  catch { byId('storage').textContent = 'El navegador bloqueó el almacenamiento. Los cambios duran hasta cerrar o recargar esta página.'; }
+}
+function element(tag, value, className) {
+  const node = document.createElement(tag);
+  node.textContent = value;
+  if (className) node.className = className;
+  return node;
+}
+const done = new Set(load('done', []).filter(id => rows.some(row => row[0] === id)));
+const opened = new Set();
+const dependencies = row => row[4] === '—' ? [] : row[4].split(',');
+const normalize = value => value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+let phase = '';
+function selectPhase(value) {
+  phase = value;
+  for (const button of byId('phases').children) button.setAttribute('aria-pressed', String(button.dataset.phase === phase));
+  render();
+}
+for (const value of ['', ...new Set(rows.map(row => row[1]))]) {
+  const button = element('button', value || 'Todas las fases');
+  button.dataset.phase = value;
+  button.onclick = () => selectPhase(value);
+  byId('phases').append(button);
+}
+function render(focusId) {
+  const search = normalize(byId('query').value.trim());
+  const release = byId('release').value;
+  const status = byId('status').value;
+  const list = byId('cards');
+  list.replaceChildren();
+  byId('progress').value = done.size;
+  byId('meter').textContent = done.size + ' de ' + rows.length + ' pasos completados · ' + Math.round(done.size / rows.length * 100) + '%';
+  for (const row of rows) {
+    const [id, group, stage, owner, , title, scope, acceptance] = row;
+    const deps = dependencies(row);
+    const blocked = deps.some(dep => !done.has(dep));
+    const state = done.has(id) ? 'done' : blocked ? 'blocked' : 'ready';
+    if ((phase && group !== phase) || (release && stage !== release) || (status && state !== status) || !normalize(row.join(' ')).includes(search)) continue;
+    const card = element('article', '');
+    card.id = 'step-' + id;
+    card.append(element('span', stage, 'badge'), element('p', id + ' · ' + group + ' · ' + owner + ' · ' + ({done:'Completado',blocked:'Dependencias pendientes',ready:'Listo para iniciar'})[state], 'meta'));
+    const details = element('details', '');
+    details.open = opened.has(id);
+    details.ontoggle = () => details.open ? opened.add(id) : opened.delete(id);
+    details.append(element('summary', title), element('p', scope), element('p', 'Criterio de aceptación. ' + acceptance));
+    const links = element('p', deps.length ? 'Depende de ' : 'Sin dependencias previas.');
+    for (const [index, dep] of deps.entries()) {
+      if (index) links.append(' · ');
+      const link = element('a', dep + ' ' + rows.find(item => item[0] === dep)[5]);
+      link.href = '#step-' + dep;
+      link.onclick = event => {
+        event.preventDefault();
+        for (const field of ['query','release','status']) byId(field).value = '';
+        opened.add(dep);
+        selectPhase('');
+        const target = byId('step-' + dep);
+        target.scrollIntoView({block:'start'});
+        target.querySelector('summary').focus({preventScroll:true});
+      };
+      links.append(link);
+    }
+    details.append(links);
+    const label = element('label', '');
+    const check = element('input', '');
+    check.type = 'checkbox';
+    check.id = 'done-' + id;
+    check.checked = done.has(id);
+    check.setAttribute('aria-label', 'Completado: ' + title);
+    check.onchange = () => {
+      if (check.checked) done.add(id); else done.delete(id);
+      save('done', [...done]);
+      render(id);
+    };
+    label.append(check, 'Completado');
+    card.append(details, label);
+    list.append(card);
+  }
+  byId('count').textContent = list.children.length ? list.children.length + ' pasos visibles' : 'No hay pasos con estos filtros.';
+  if (focusId) (byId('done-' + focusId) || byId('status')).focus({preventScroll:true});
+}
+function applyTheme(value) {
+  if (value) document.documentElement.dataset.theme = value;
+  else delete document.documentElement.dataset.theme;
+}
+byId('theme').value = load('theme', '');
+applyTheme(byId('theme').value);
+byId('theme').onchange = event => {
+  applyTheme(event.target.value);
+  save('theme', event.target.value);
+};
+byId('query').oninput = () => render();
+byId('release').onchange = () => render();
+byId('status').onchange = () => render();
+selectPhase('');
+</script></body></html>
