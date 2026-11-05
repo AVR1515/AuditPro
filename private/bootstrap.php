@@ -66,6 +66,12 @@ function field(string $key, int $max = 180): string {
     }
     return trim($value);
 }
+function dateField(string $key): string {
+    $date = field($key,10);
+    $parsed = DateTimeImmutable::createFromFormat('!Y-m-d',$date);
+    if (!$parsed || $parsed->format('Y-m-d') !== $date || $date < '1000-01-01') throw new DomainException('Fecha inválida.');
+    return $date;
+}
 function choice(string $key, array $choices): string {
     $value = field($key);
     if (!in_array($value, $choices, true)) throw new DomainException("Valor inválido para $key.");

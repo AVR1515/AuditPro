@@ -103,19 +103,23 @@ function mutate(PDO $pdo, array $user, string $op): ?int {
             $owner = positiveId('owner');
             if (!query($pdo,'SELECT 1 FROM findings f JOIN tests t ON t.id=f.test_id WHERE f.id=? AND t.audit_id=?',[$finding,$id])->fetchColumn() ||
                 !query($pdo,"SELECT 1 FROM users WHERE id=? AND active=1 AND role='responsable'",[$owner])->fetchColumn()) throw new DomainException('Selecciona un hallazgo y un responsable válidos.');
-            $date = field('due',10);
-            $parsed = DateTimeImmutable::createFromFormat('!Y-m-d',$date);
-            if (!$parsed || $parsed->format('Y-m-d') !== $date || $date < '1000-01-01') throw new DomainException('Fecha inválida.');
+            $date = dateField('due');
             query($pdo,'INSERT INTO actions(finding_id,owner_id,description,due_date) VALUES (?,?,?,?)',[$finding,$owner,field('description',12000),$date]);
             $detail = $pdo->lastInsertId();
             break;
+        case 'extend':
         case 'attach_action':
         case 'evidence':
         case 'verify':
             $action = positiveId('action_id');
             $row = query($pdo,'SELECT a.* FROM actions a JOIN findings f ON f.id=a.finding_id JOIN tests t ON t.id=f.test_id WHERE a.id=? AND t.audit_id=?',[$action,$id])->fetch();
             if (!$row || $state !== 'emitida') throw new DomainException('Acción no disponible.');
-            if ($op === 'attach_action' && $user['role'] === 'responsable' && $actor === (int) $row['owner_id'] && $row['status'] === 'abierta') {
+            if ($op === 'extend' && $manager && $row['status'] !== 'cerrada') {
+                $newDue = dateField('due');
+                if ($newDue <= $row['due_date']) throw new DomainException('La prórroga debe ser posterior al vencimiento actual.');
+                $detail = $row['due_date'] . ' → ' . $newDue . ': ' . field('note',150);
+                query($pdo,'UPDATE actions SET due_date=? WHERE id=?',[$newDue,$action]);
+            } elseif ($op === 'attach_action' && $user['role'] === 'responsable' && $actor === (int) $row['owner_id'] && $row['status'] === 'abierta') {
                 storeAttachment($pdo,$actor,'action',$action);
             } elseif ($op === 'evidence' && $user['role'] === 'responsable' && $actor === (int) $row['owner_id'] && $row['status'] === 'abierta') {
                 query($pdo,"UPDATE actions SET evidence=?,status='en_verificacion' WHERE id=?",[field('evidence',12000),$action]);

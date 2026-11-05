@@ -23,3 +23,5 @@ Supervisión puede registrar unidades auditables, crear evaluaciones históricas
 La vista del plan incluye búsqueda por título o entidad, filtros por año, estado y riesgo, indicadores del conjunto filtrado y exportación CSV con el mismo alcance. Supervisión puede registrar riesgos, controles y obligaciones y vincular un control con varias obligaciones, riesgos y pruebas. El roadmap conserva las revisiones recurrentes, los flujos por rol, la planificación avanzada y los tableros ampliados.
 
 CSS propio y JavaScript local. Para pruebas con el servidor embebido de PHP en loopback, define `AUDITPRO_DEV=1` y sirve `public/`. En producción usa HTTPS.
+La bandeja calcula automáticamente acciones vencidas, próximas a vencer y en verificación dentro del ámbito de cada usuario. Para supervisión también muestra las revisiones de riesgos y obligaciones de los próximos siete días.
+Supervisión puede prorrogar acciones emitidas con una justificación. El historial conserva las fechas anterior y nueva.

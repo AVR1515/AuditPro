@@ -6,6 +6,7 @@ require __DIR__ . '/../private/attachments.php';
 require __DIR__ . '/../private/overview.php';
 require __DIR__ . '/../private/universe.php';
 require __DIR__ . '/../private/grc.php';
+require __DIR__ . '/../private/inbox.php';
 start();
 $error = null;
 $user = null;
@@ -108,7 +109,7 @@ if (!$user): ?>
 <button>Entrar</button></form></section>
 <?php if ($error && !isset($pdo)): ?><a href="install.php">Instalar AuditPro</a><?php endif;
 endPage(); return; endif; ?>
-<nav><a href="index.php">Área de trabajo</a><?php if (manage($user)): ?><a href="index.php?view=universe">Universo auditable</a><a href="index.php?view=grc">Riesgos y cumplimiento</a><?php endif; ?><span><?= e($user['name']) ?> · <?= e($user['role']) ?></span><?php form('logout',[],true); ?><button>Salir</button></form></nav>
+<nav><a href="index.php">Área de trabajo</a><a href="index.php?view=inbox">Bandeja</a><?php if (manage($user)): ?><a href="index.php?view=universe">Universo auditable</a><a href="index.php?view=grc">Riesgos y cumplimiento</a><?php endif; ?><span><?= e($user['name']) ?> · <?= e($user['role']) ?></span><?php form('logout',[],true); ?><button>Salir</button></form></nav>
 <?php
 $manager = manage($user);
 $auditor = $user['role'] === 'auditor';
@@ -120,6 +121,11 @@ if (($_GET['view'] ?? '') === 'universe' && $manager && !$audit) {
 }
 if (($_GET['view'] ?? '') === 'grc' && $manager && !$audit) {
     require __DIR__ . '/../private/grc-view.php';
+    endPage();
+    return;
+}
+if (($_GET['view'] ?? '') === 'inbox' && !$audit) {
+    require __DIR__ . '/../private/inbox-view.php';
     endPage();
     return;
 }

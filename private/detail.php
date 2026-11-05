@@ -63,9 +63,14 @@ foreach ($findings as $finding): ?>
 <section><h2>Acciones correctivas</h2>
 <?php if (!$actions): ?><p class="muted">Sin acciones disponibles.</p><?php endif;
 foreach ($actions as $action): $actionKeys = $keys + ['action_id'=>$action['id']]; ?>
-<article><?php copyBlock('Acción',$action['description']); ?>
+<article id="action-<?= e($action['id']) ?>"><?php copyBlock('Acción',$action['description']); ?>
 <p><?= e($action['name']) ?> · Vence <?= e($action['due_date']) ?> · <?= e(str_replace('_',' ',$action['status'])) ?></p>
 <?php if ($action['evidence'] !== null) copyBlock('Evidencia presentada',$action['evidence']); ?>
+<?php if ($state === 'emitida' && $manager && $action['status'] !== 'cerrada'): ?>
+<details><summary>Registrar prórroga</summary><?php form('extend',$actionKeys); ?>
+<label>Nuevo vencimiento<input type="date" name="due" required></label>
+<label>Justificación<input name="note" maxlength="150" required></label><button>Guardar prórroga</button></form></details>
+<?php endif; ?>
 <?php listAttachments($pdo,'action',(int) $action['id']); ?>
 <?php if ($state === 'emitida' && $responsible && $action['status'] === 'abierta'): ?>
 <details><summary>Adjuntar evidencia de acción</summary><?php form('attach_action',$actionKeys,false,true); ?>

@@ -4,13 +4,6 @@ declare(strict_types=1);
 const GRC_OPS = ['grc_risk','grc_control','grc_obligation','grc_link_risk','grc_link_obligation','grc_link_test'];
 const FREQUENCIES = ['mensual','trimestral','anual','por_evento'];
 
-function reviewDate(): string {
-    $date = field('review',10);
-    $parsed = DateTimeImmutable::createFromFormat('!Y-m-d',$date);
-    if (!$parsed || $parsed->format('Y-m-d') !== $date || $date < '1000-01-01') throw new DomainException('Fecha de revisión inválida.');
-    return $date;
-}
-
 function saveGrc(PDO $pdo, array $user, string $op): void {
     if (!manage($user)) throw new DomainException('Acceso restringido a supervisión.');
     $auditId = null;
@@ -25,7 +18,7 @@ function saveGrc(PDO $pdo, array $user, string $op): void {
                 throw new DomainException('Selecciona una unidad y puntuaciones entre 1 y 25.');
             }
             query($pdo,'INSERT INTO grc_risks(unit_id,title,owner_name,inherent,residual,appetite,treatment,review_on) VALUES (?,?,?,?,?,?,?,?)',
-                [$unit,field('title'),field('owner_name'),$inherent,$residual,$appetite,field('treatment',12000),reviewDate()]);
+                [$unit,field('title'),field('owner_name'),$inherent,$residual,$appetite,field('treatment',12000),dateField('review')]);
             break;
         case 'grc_control':
             query($pdo,'INSERT INTO grc_controls(title,owner_name,frequency,description) VALUES (?,?,?,?)',
@@ -38,7 +31,7 @@ function saveGrc(PDO $pdo, array $user, string $op): void {
                 throw new DomainException('La referencia ya existe en ese marco.');
             }
             query($pdo,'INSERT INTO grc_obligations(framework,reference_code,title,owner_name,review_on) VALUES (?,?,?,?,?)',
-                [$framework,$reference,field('title'),field('owner_name'),reviewDate()]);
+                [$framework,$reference,field('title'),field('owner_name'),dateField('review')]);
             break;
         default:
             [$table,$column,$parentTable] = [
