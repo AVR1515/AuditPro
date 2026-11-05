@@ -7,6 +7,7 @@ require __DIR__ . '/../private/overview.php';
 require __DIR__ . '/../private/universe.php';
 require __DIR__ . '/../private/grc.php';
 require __DIR__ . '/../private/inbox.php';
+require __DIR__ . '/../private/plans.php';
 start();
 $error = null;
 $user = null;
@@ -62,6 +63,11 @@ try {
             $pdo->commit();
             redirect('index.php?view=grc');
         }
+        if (in_array($op,['snapshot_plan','approve_plan'],true)) {
+            savePlan($pdo,$user,$op);
+            $pdo->commit();
+            redirect('index.php?view=plans');
+        }
         $id = mutate($pdo,$user,$op);
         $pdo->commit();
         redirect($id ? 'index.php?id=' . $id : 'index.php');
@@ -109,7 +115,7 @@ if (!$user): ?>
 <button>Entrar</button></form></section>
 <?php if ($error && !isset($pdo)): ?><a href="install.php">Instalar AuditPro</a><?php endif;
 endPage(); return; endif; ?>
-<nav><a href="index.php">Área de trabajo</a><a href="index.php?view=inbox">Bandeja</a><?php if (manage($user)): ?><a href="index.php?view=universe">Universo auditable</a><a href="index.php?view=grc">Riesgos y cumplimiento</a><?php endif; ?><span><?= e($user['name']) ?> · <?= e($user['role']) ?></span><?php form('logout',[],true); ?><button>Salir</button></form></nav>
+<nav><a href="index.php">Área de trabajo</a><a href="index.php?view=inbox">Bandeja</a><?php if (manage($user)): ?><a href="index.php?view=universe">Universo auditable</a><a href="index.php?view=plans">Plan anual</a><a href="index.php?view=grc">Riesgos y cumplimiento</a><?php endif; ?><span><?= e($user['name']) ?> · <?= e($user['role']) ?></span><?php form('logout',[],true); ?><button>Salir</button></form></nav>
 <?php
 $manager = manage($user);
 $auditor = $user['role'] === 'auditor';
@@ -126,6 +132,11 @@ if (($_GET['view'] ?? '') === 'grc' && $manager && !$audit) {
 }
 if (($_GET['view'] ?? '') === 'inbox' && !$audit) {
     require __DIR__ . '/../private/inbox-view.php';
+    endPage();
+    return;
+}
+if (($_GET['view'] ?? '') === 'plans' && $manager && !$audit) {
+    require __DIR__ . '/../private/plans-view.php';
     endPage();
     return;
 }
