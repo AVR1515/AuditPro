@@ -3,6 +3,8 @@ declare(strict_types=1);
 require __DIR__ . '/../private/bootstrap.php';
 require __DIR__ . '/../private/workflow.php';
 require __DIR__ . '/../private/attachments.php';
+require __DIR__ . '/../private/overview.php';
+require __DIR__ . '/../private/universe.php';
 start();
 $error = null;
 $user = null;
@@ -11,6 +13,9 @@ try {
     $pdo = db(config());
     if (!$pdo->query('SELECT id FROM installation WHERE id=1')->fetchColumn()) redirect('install.php');
     if (isset($_SESSION['user'])) $user = query($pdo,'SELECT id,name,role FROM users WHERE id=? AND active=1',[$_SESSION['user']])->fetch() ?: null;
+    if (isset($_GET['export']) && $user && $user['role'] !== 'responsable') {
+        planCsv(planRows($pdo,$user,planFilters()));
+    }
     if (isset($_GET['download'])) {
         $download = filter_var($_GET['download'],FILTER_VALIDATE_INT,['options'=>['min_range'=>1]]);
         if (!$user || !$download) throw new DomainException('Archivo no disponible.');
@@ -45,6 +50,11 @@ try {
         }
         if (!$user) throw new DomainException('Inicia sesión para continuar.');
         $pdo->beginTransaction();
+        if (in_array($op,['unit','assess'],true)) {
+            assess($pdo,$user,$op);
+            $pdo->commit();
+            redirect('index.php?view=universe');
+        }
         $id = mutate($pdo,$user,$op);
         $pdo->commit();
         redirect($id ? 'index.php?id=' . $id : 'index.php');
@@ -74,8 +84,8 @@ function form(string $op, array $keys = [], bool $inline = false, bool $upload =
         echo '<input type="hidden" name="' . e($name) . '" value="' . e($value) . '">';
     }
 }
-function options(array $values): void {
-    foreach ($values as $value) echo '<option value="' . e($value) . '">' . e(ucfirst(str_replace('_',' ',$value))) . '</option>';
+function options(array $values, string $selected = ''): void {
+    foreach ($values as $value) echo '<option value="' . e($value) . '"' . ($value === $selected ? ' selected' : '') . '>' . e(ucfirst(str_replace('_',' ',$value))) . '</option>';
 }
 function people(array $users): void {
     foreach ($users as $person) echo '<option value="' . e($person['id']) . '">' . e($person['name']) . '</option>';
@@ -92,18 +102,36 @@ if (!$user): ?>
 <button>Entrar</button></form></section>
 <?php if ($error && !isset($pdo)): ?><a href="install.php">Instalar AuditPro</a><?php endif;
 endPage(); return; endif; ?>
-<nav><a href="index.php">Área de trabajo</a><span><?= e($user['name']) ?> · <?= e($user['role']) ?></span><?php form('logout',[],true); ?><button>Salir</button></form></nav>
+<nav><a href="index.php">Área de trabajo</a><?php if (manage($user)): ?><a href="index.php?view=universe">Universo auditable</a><?php endif; ?><span><?= e($user['name']) ?> · <?= e($user['role']) ?></span><?php form('logout',[],true); ?><button>Salir</button></form></nav>
 <?php
 $manager = manage($user);
 $auditor = $user['role'] === 'auditor';
 $responsible = $user['role'] === 'responsable';
+if (($_GET['view'] ?? '') === 'universe' && $manager && !$audit) {
+    require __DIR__ . '/../private/universe-view.php';
+    endPage();
+    return;
+}
 if (!$audit):
     if ($responsible) {
         $items = query($pdo,"SELECT a.description,a.due_date,a.status,t.audit_id FROM actions a JOIN findings f ON f.id=a.finding_id JOIN tests t ON t.id=f.test_id JOIN audits d ON d.id=t.audit_id WHERE a.owner_id=? AND d.status IN ('emitida','cerrada') ORDER BY a.due_date",[$user['id']])->fetchAll();
     } else {
-        $items = query($pdo,'SELECT id,title,entity,year,risk,status FROM audits' . ($manager ? '' : ' WHERE owner_id=?') . ' ORDER BY year DESC,id DESC',$manager ? [] : [$user['id']])->fetchAll();
+        $filters = planFilters();
+        $items = planRows($pdo,$user,$filters);
+        $completed = count(array_filter($items,fn(array $item): bool => $item['status'] === 'cerrada'));
+        $issued = count(array_filter($items,fn(array $item): bool => in_array($item['status'],['emitida','cerrada'],true)));
+        $export = '?' . http_build_query(['export'=>'plan'] + $filters);
     } ?>
 <section><h2><?= $responsible ? 'Mis acciones' : 'Plan y expedientes' ?></h2>
+<?php if (!$responsible): ?>
+<dl class="metrics"><div><dt>Expedientes filtrados</dt><dd><?= count($items) ?></dd></div><div><dt>Informes emitidos</dt><dd><?= $issued ?></dd></div><div><dt>Auditorías cerradas</dt><dd><?= $completed ?></dd></div></dl>
+<form method="get" class="filters">
+<label>Buscar<input type="search" name="q" value="<?= e($filters['q']) ?>" maxlength="180" placeholder="Título o entidad"></label>
+<label>Año<input type="number" name="year" min="2000" max="2100" value="<?= e($filters['year']) ?>"></label>
+<label>Estado<select name="status"><option value="">Todos</option><?php options(STATES,$filters['status']); ?></select></label>
+<label>Riesgo<select name="risk"><option value="">Todos</option><?php options(LEVELS,$filters['risk']); ?></select></label>
+<button>Filtrar</button><a href="index.php">Limpiar</a><a href="<?= e($export) ?>">Exportar CSV</a></form>
+<?php endif; ?>
 <?php if (!$items): ?><p class="muted">Aún no hay registros asignados.</p><?php else: ?>
 <div class="table"><table><thead><tr><?php foreach ($responsible ? ['Acción','Vence','Estado'] : ['Auditoría','Entidad','Año','Riesgo','Estado'] as $column): ?><th scope="col"><?= e($column) ?></th><?php endforeach; ?></tr></thead><tbody>
 <?php foreach ($items as $item): ?><tr><?php if ($responsible): ?>
@@ -113,7 +141,10 @@ if (!$audit):
 <div class="grid">
 <?php if ($manager): $auditors = $pdo->query("SELECT id,name FROM users WHERE role='auditor' AND active=1 ORDER BY name")->fetchAll(); ?>
 <section><h2>Nueva auditoría</h2><?php if (!$auditors): ?><p>Crea primero un usuario con rol auditor.</p><?php else: form('audit'); ?>
-<label>Título<input name="title" required maxlength="180"></label><label>Entidad<input name="entity" required maxlength="180"></label>
+<label>Título<input name="title" required maxlength="180"></label>
+<label>Evaluación de riesgo<select name="assessment"><option value="">Captura manual</option>
+<?php foreach (assessments($pdo,true) as $evaluation): ?><option value="<?= e($evaluation['id']) ?>"><?= e($evaluation['name']) ?> · <?= e($evaluation['score']) ?>/25</option><?php endforeach; ?>
+</select></label><label>Entidad para captura manual<input name="entity" maxlength="180"></label>
 <label>Año<input name="year" type="number" min="2000" max="2100" value="<?= e(date('Y')) ?>" required></label>
 <label>Riesgo<select name="risk"><?php options(LEVELS); ?></select></label>
 <label>Auditor<select name="owner"><?php people($auditors); ?></select></label>

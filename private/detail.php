@@ -8,10 +8,12 @@ $actions = query($pdo,'SELECT a.*,u.name FROM actions a JOIN users u ON u.id=a.o
 if (!$responsible):
 $tests = query($pdo,'SELECT * FROM tests WHERE audit_id=? ORDER BY id',[$id])->fetchAll();
 $findings = query($pdo,'SELECT f.*,t.title AS test_title FROM findings f JOIN tests t ON t.id=f.test_id WHERE t.audit_id=? ORDER BY f.id',[$id])->fetchAll();
+$evaluation = query($pdo,'SELECT r.* FROM audit_assessment_links a JOIN risk_assessments r ON r.id=a.assessment_id WHERE a.audit_id=?',[$id])->fetch();
 $next = $manager ? nextState($pdo,$audit) : null;
 ?>
 <section>
 <p><?= e($audit['entity']) ?> · <?= e($audit['year']) ?> · Riesgo <?= e($audit['risk']) ?> · <?= e(str_replace('_',' ',$state)) ?></p>
+<?php if ($evaluation): ?><p>Evaluación vinculada · <?= e($evaluation['methodology']) ?> · <?= e($evaluation['score']) ?>/25 · <?= e($evaluation['created_at']) ?></p><?php endif; ?>
 <?php copyBlock('Objetivo y alcance', $audit['objective']); ?>
 <?php if ($audit['report'] !== null): ?><h2>Informe emitido</h2><p class="copy"><?= e($audit['report']) ?></p><?php endif; ?>
 <?php if ($next): form('advance',$keys); ?>

@@ -16,8 +16,10 @@ Crea un auditor y un responsable desde la cuenta administradora. Registra un exp
 
 Las pruebas y acciones admiten archivos PDF, PNG, JPEG y TXT de hasta 5 MiB. Se guardan en SQL con huella SHA-256 y el acceso se verifica antes de cada descarga. Inclúyelos en el respaldo de la base. Habilita `fileinfo`, configura `upload_max_filesize` a 5M o más, `post_max_size` a un valor superior y `max_allowed_packet` de SQL a 8 MiB o más. Otorga a la app SELECT e INSERT sobre `attachments`.
 
-Para actualizar una instalación anterior, respalda la base, ejecuta `private/upgrade-002.sql` en el esquema de AuditPro con una cuenta de mantenimiento, aplica los permisos de adjuntos y luego publica los nuevos archivos. En una instalación limpia el instalador ya aplica ese SQL.
+Para actualizar una instalación anterior, respalda la base, ejecuta en orden `private/upgrade-002.sql` y `private/upgrade-003.sql` en el esquema de AuditPro con una cuenta de mantenimiento, aplica los permisos de adjuntos y de universo (SELECT e INSERT en `auditable_units`, `risk_assessments` y `audit_assessment_links`) y luego publica los nuevos archivos. En una instalación limpia el instalador ya aplica ese SQL.
 
-El roadmap conserva el alcance pendiente para planificación avanzada, riesgos, cumplimiento y reportes.
+Supervisión puede registrar unidades auditables, crear evaluaciones históricas con la escala probabilidad × impacto y vincular una evaluación a un expediente. El expediente conserva la evaluación y el riesgo originales.
+
+La vista del plan incluye búsqueda por título o entidad, filtros por año, estado y riesgo, indicadores del conjunto filtrado y exportación CSV con el mismo alcance. El roadmap conserva la planificación avanzada, los tableros ampliados y los módulos de riesgos y cumplimiento.
 
 CSS propio y JavaScript local. Para pruebas con el servidor embebido de PHP en loopback, define `AUDITPRO_DEV=1` y sirve `public/`. En producción usa HTTPS.

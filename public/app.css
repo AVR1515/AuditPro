@@ -31,3 +31,9 @@ details>form{margin-top:.8rem}
 table{width:100%;border-collapse:collapse}
 th,td{text-align:left;padding:.65rem;border-bottom:1px solid var(--line)}
 @media print{header,nav,form,details{display:none}body,section,article{background:white;color:black}}
+.metrics{display:flex;gap:1rem;flex-wrap:wrap;margin:1rem 0}
+.metrics div{flex:1 1 11rem;padding:.65rem 1rem;border:1px solid var(--line);border-radius:.65rem}
+.metrics dt{color:var(--muted)}
+.metrics dd{margin:0;font-size:1.75rem;font-weight:750}
+.filters{display:flex;flex-wrap:wrap;align-items:end;max-width:none;margin:1rem 0}
+.filters button,.filters a{align-self:end;margin-bottom:.25rem}

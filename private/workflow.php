@@ -46,9 +46,15 @@ function mutate(PDO $pdo, array $user, string $op): ?int {
         if ($year < 2000 || $year > 2100) throw new DomainException('El año debe estar entre 2000 y 2100.');
         $owner = positiveId('owner');
         if (!query($pdo,"SELECT 1 FROM users WHERE id=? AND active=1 AND role='auditor'",[$owner])->fetchColumn()) throw new DomainException('Selecciona un auditor activo.');
+        $assessment = null;
+        if (isset($_POST['assessment']) && $_POST['assessment'] !== '') {
+            $assessment = query($pdo,'SELECT r.id,r.rating,u.name FROM risk_assessments r JOIN auditable_units u ON u.id=r.unit_id WHERE r.id=?',[positiveId('assessment')])->fetch();
+            if (!$assessment) throw new DomainException('La evaluación seleccionada no existe.');
+        }
         query($pdo,'INSERT INTO audits(title,entity,objective,year,risk,owner_id) VALUES (?,?,?,?,?,?)',
-            [field('title'),field('entity'),field('objective',12000),$year,choice('risk',LEVELS),$owner]);
+            [field('title'),$assessment['name'] ?? field('entity'),field('objective',12000),$year,$assessment['rating'] ?? choice('risk',LEVELS),$owner]);
         $id = (int) $pdo->lastInsertId();
+        if ($assessment) query($pdo,'INSERT INTO audit_assessment_links(audit_id,assessment_id) VALUES (?,?)',[$id,$assessment['id']]);
         record($pdo,$actor,$id,'auditoria_creada');
         return $id;
     }
