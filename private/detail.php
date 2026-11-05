@@ -25,6 +25,7 @@ $next = $manager ? nextState($pdo,$audit) : null;
 <button><?= e(['aprobada'=>'Aprobar auditoría','en_campo'=>'Iniciar trabajo de campo','en_revision'=>'Enviar a revisión','emitida'=>'Emitir informe','cerrada'=>'Cerrar auditoría'][$next]) ?></button></form>
 <?php elseif ($manager && in_array($state,['en_campo','en_revision','emitida'],true)): ?><p class="muted">Completa las pruebas, la asignación de acciones o la verificación de cierres antes de avanzar.</p><?php endif; ?>
 </section>
+<?php require __DIR__ . '/hours-view.php'; ?>
 <section><h2>Pruebas y papeles de trabajo</h2>
 <?php if ($auditor && $state === 'en_campo'): ?><details><summary>Nueva prueba</summary><?php form('test',$keys); ?>
 <label>Título<input name="title" required maxlength="180"></label><label>Procedimiento<textarea name="procedure" required maxlength="12000"></textarea></label><button>Crear prueba</button></form></details><?php endif; ?>

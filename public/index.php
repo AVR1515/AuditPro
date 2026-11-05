@@ -8,6 +8,7 @@ require __DIR__ . '/../private/universe.php';
 require __DIR__ . '/../private/grc.php';
 require __DIR__ . '/../private/inbox.php';
 require __DIR__ . '/../private/plans.php';
+require __DIR__ . '/../private/hours.php';
 start();
 $error = null;
 $user = null;

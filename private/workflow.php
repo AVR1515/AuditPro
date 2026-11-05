@@ -65,6 +65,10 @@ function mutate(PDO $pdo, array $user, string $op): ?int {
     $manager = manage($user);
     $detail = '';
     switch ($op) {
+        case 'schedule':
+        case 'log_time':
+            $detail = saveHours($pdo,$user,$audit,$op);
+            break;
         case 'advance':
             if (!$manager || !($next = nextState($pdo,$audit))) throw new DomainException('La transición requiere revisar pruebas o acciones pendientes.');
             $report = $next === 'emitida' ? field('report',30000) : $audit['report'];
