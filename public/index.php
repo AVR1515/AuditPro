@@ -32,7 +32,7 @@ try {
             $user = $account;
         }
     }
-    if (isset($_GET['export']) && $user && $user['role'] !== 'responsable') {
+    if (isset($_GET['export']) && $user && in_array($user['role'],['admin','supervisor','auditor'],true)) {
         planCsv(planRows($pdo,$user,planFilters()));
     }
     if (isset($_GET['download'])) {
@@ -126,7 +126,9 @@ if ($user && isset($_GET['id'])) {
         $error = $exception->getMessage();
     }
 }
-$reportView = ($_GET['view'] ?? '') === 'report';
+$view = $_GET['view'] ?? '';
+if ($user && isGrcSpecialist($user) && !isset($_GET['id']) && $view === '') $view = 'grc';
+$reportView = $view === 'report';
 if ($reportView && (!$audit || !$user || $user['role'] === 'responsable' || $audit['report'] === null)) {
     http_response_code(404);
     exit('Informe no disponible.');
@@ -165,12 +167,12 @@ if (($_GET['view'] ?? '') === 'universe' && $manager && !$audit) {
     endPage(true);
     return;
 }
-if (($_GET['view'] ?? '') === 'grc' && $manager && !$audit) {
+if ($view === 'grc' && canGrc($user) && !$audit) {
     require __DIR__ . '/../private/grc-view.php';
     endPage(true);
     return;
 }
-if (($_GET['view'] ?? '') === 'inbox' && !$audit) {
+if ($view === 'inbox' && !isGrcSpecialist($user) && !$audit) {
     require __DIR__ . '/../private/inbox-view.php';
     endPage(true);
     return;
@@ -190,8 +192,13 @@ if (($_GET['view'] ?? '') === 'account' && !$audit) {
     endPage(true);
     return;
 }
-if (($_GET['view'] ?? '') === 'import' && $manager && !$audit) {
+if ($view === 'import' && canCompliance($user) && !$audit) {
     require __DIR__ . '/../private/import-view.php';
+    endPage(true);
+    return;
+}
+if (!$audit && isGrcSpecialist($user)) {
+    if (!$error) errorBox('La vista solicitada está fuera del ámbito de tu cuenta.');
     endPage(true);
     return;
 }

@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-const ROLES = ['admin', 'supervisor', 'auditor', 'responsable'];
+const ROLES = ['admin', 'supervisor', 'auditor', 'responsable', 'riesgos', 'cumplimiento'];
 const LEVELS = ['bajo', 'medio', 'alto', 'critico'];
 const STATES = ['borrador', 'aprobada', 'en_campo', 'en_revision', 'emitida', 'cerrada'];
 
@@ -100,8 +100,8 @@ function page(string $title, ?array $user = null): void { ?>
 <div class="shell"><aside><nav aria-label="Módulos de AuditPro">
 <p class="nav-caption">ESPACIO DE TRABAJO</p>
 <?php
-$sections = [''=>'Expedientes','inbox'=>'Bandeja'];
-if (in_array($user['role'],['admin','supervisor'],true)) $sections += ['plans'=>'Plan anual','universe'=>'Universo auditable','grc'=>'Riesgos y cumplimiento'];
+$sections = isGrcSpecialist($user) ? ['grc'=>'Riesgos y cumplimiento'] : [''=>'Expedientes','inbox'=>'Bandeja'];
+if (manage($user)) $sections += ['plans'=>'Plan anual','universe'=>'Universo auditable','grc'=>'Riesgos y cumplimiento'];
 $sections['account'] = 'Mi cuenta';
 foreach ($sections as $key=>$label):
     $href = 'index.php' . ($key ? '?view=' . $key : '');

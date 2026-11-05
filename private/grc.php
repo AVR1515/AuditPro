@@ -4,8 +4,27 @@ declare(strict_types=1);
 const GRC_OPS = ['grc_risk','grc_control','grc_obligation','grc_link_risk','grc_link_obligation','grc_link_test'];
 const FREQUENCIES = ['mensual','trimestral','anual','por_evento'];
 
+function isGrcSpecialist(array $user): bool {
+    return in_array($user['role'],['riesgos','cumplimiento'],true);
+}
+function canGrc(array $user): bool {
+    return manage($user) || isGrcSpecialist($user);
+}
+function canRisk(array $user): bool {
+    return manage($user) || $user['role'] === 'riesgos';
+}
+function canCompliance(array $user): bool {
+    return manage($user) || $user['role'] === 'cumplimiento';
+}
+
 function saveGrc(PDO $pdo, array $user, string $op): void {
-    if (!manage($user)) throw new DomainException('Acceso restringido a supervisión.');
+    $allowed = match ($op) {
+        'grc_risk','grc_link_risk' => canRisk($user),
+        'grc_obligation','grc_link_obligation' => canCompliance($user),
+        'grc_control' => canGrc($user),
+        'grc_link_test' => manage($user),
+    };
+    if (!$allowed) throw new DomainException('Tu rol no puede realizar esta operación.');
     $auditId = null;
     $detail = '';
     switch ($op) {
@@ -56,12 +75,15 @@ function saveGrc(PDO $pdo, array $user, string $op): void {
     record($pdo,(int) $user['id'],$auditId,$op,$detail ?: (string) $pdo->lastInsertId());
 }
 
-function grcMappings(PDO $pdo): array {
+function grcMappings(PDO $pdo, array $user): array {
     $sql = [
         'risks'=>'SELECT m.control_id,r.title FROM grc_risk_controls m JOIN grc_risks r ON r.id=m.risk_id ORDER BY r.title',
         'obligations'=>"SELECT m.control_id,CONCAT(o.framework,' / ',o.reference_code,' · ',o.title) AS title FROM grc_obligation_controls m JOIN grc_obligations o ON o.id=m.obligation_id ORDER BY o.framework,o.reference_code",
         'tests'=>'SELECT m.control_id,t.title,t.status,t.audit_id FROM grc_control_tests m JOIN tests t ON t.id=m.test_id ORDER BY t.id',
     ];
+    if (!canRisk($user)) unset($sql['risks']);
+    if (!canCompliance($user)) unset($sql['obligations']);
+    if (!manage($user)) unset($sql['tests']);
     $result = [];
     foreach ($sql as $type=>$statement) {
         foreach ($pdo->query($statement) as $row) $result[$row['control_id']][$type][] = $row;

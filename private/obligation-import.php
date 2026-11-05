@@ -40,7 +40,7 @@ function parseObligations(): array {
 }
 
 function importObligations(PDO $pdo, array $user, string $op): string {
-    if (!manage($user)) throw new DomainException('Acceso restringido a supervisión.');
+    if (!canCompliance($user)) throw new DomainException('Tu rol no puede importar obligaciones.');
     if ($op === 'preview_obligations') {
         unset($_SESSION['obligation_import']);
         $_SESSION['obligation_import'] = ['token'=>bin2hex(random_bytes(16)), 'rows'=>parseObligations()];
