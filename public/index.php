@@ -2,6 +2,7 @@
 declare(strict_types=1);
 require __DIR__ . '/../private/bootstrap.php';
 require __DIR__ . '/../private/workflow.php';
+require __DIR__ . '/../private/attachments.php';
 start();
 $error = null;
 $user = null;
@@ -10,6 +11,11 @@ try {
     $pdo = db(config());
     if (!$pdo->query('SELECT id FROM installation WHERE id=1')->fetchColumn()) redirect('install.php');
     if (isset($_SESSION['user'])) $user = query($pdo,'SELECT id,name,role FROM users WHERE id=? AND active=1',[$_SESSION['user']])->fetch() ?: null;
+    if (isset($_GET['download'])) {
+        $download = filter_var($_GET['download'],FILTER_VALIDATE_INT,['options'=>['min_range'=>1]]);
+        if (!$user || !$download) throw new DomainException('Archivo no disponible.');
+        downloadAttachment($pdo,$user,$download);
+    }
     if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         verifyCsrf();
         $op = field('op');
@@ -44,6 +50,7 @@ try {
         redirect($id ? 'index.php?id=' . $id : 'index.php');
     }
 } catch (DomainException $exception) {
+    if (isset($_GET['download'])) { http_response_code(404); exit('Archivo no disponible.'); }
     $error = $exception->getMessage();
 } catch (Throwable $exception) {
     error_log('AuditPro: ' . get_class($exception) . ' ' . $exception->getCode());
@@ -61,8 +68,8 @@ if ($user && isset($_GET['id'])) {
         $error = $exception->getMessage();
     }
 }
-function form(string $op, array $keys = [], bool $inline = false): void {
-    echo '<form method="post"' . ($inline ? ' class="inline"' : '') . '>' . csrf();
+function form(string $op, array $keys = [], bool $inline = false, bool $upload = false): void {
+    echo '<form method="post"' . ($inline ? ' class="inline"' : '') . ($upload ? ' enctype="multipart/form-data"' : '') . '>' . csrf();
     foreach (['op'=>$op] + $keys as $name=>$value) {
         echo '<input type="hidden" name="' . e($name) . '" value="' . e($value) . '">';
     }

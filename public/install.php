@@ -38,6 +38,9 @@ try {
             foreach (explode(';', $schema) as $sql) {
                 if (trim($sql) !== '') $installer->exec($sql);
             }
+            $migration = file_get_contents(__DIR__ . '/../private/upgrade-002.sql');
+            if ($migration === false) throw new RuntimeException('Falta el esquema de evidencias.');
+            $installer->exec($migration);
             db($config)->query('SELECT id FROM installation LIMIT 1');
             $installer->beginTransaction();
             if (!$installer->query('SELECT id FROM installation WHERE id=1')->fetchColumn()) {

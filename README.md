@@ -14,6 +14,10 @@ Aplicación PHP y SQL para gestionar expedientes de auditoría interna. El [road
 
 Crea un auditor y un responsable desde la cuenta administradora. Registra un expediente y aprueba su paso a trabajo de campo. En la cuenta del auditor documenta pruebas y hallazgos. Revisa las pruebas y asigna acciones con la cuenta supervisora o administradora. Emite el informe y usa la cuenta responsable para presentar la descripción y las referencias de evidencia. La cuenta supervisora o administradora verifica las acciones y cierra la auditoría.
 
-Esta primera implementación registra evidencia textual. El roadmap conserva el alcance pendiente para adjuntos, planificación avanzada, riesgos, cumplimiento y reportes.
+Las pruebas y acciones admiten archivos PDF, PNG, JPEG y TXT de hasta 5 MiB. Se guardan en SQL con huella SHA-256 y el acceso se verifica antes de cada descarga. Inclúyelos en el respaldo de la base. Habilita `fileinfo`, configura `upload_max_filesize` a 5M o más, `post_max_size` a un valor superior y `max_allowed_packet` de SQL a 8 MiB o más. Otorga a la app SELECT e INSERT sobre `attachments`.
+
+Para actualizar una instalación anterior, respalda la base, ejecuta `private/upgrade-002.sql` en el esquema de AuditPro con una cuenta de mantenimiento, aplica los permisos de adjuntos y luego publica los nuevos archivos. En una instalación limpia el instalador ya aplica ese SQL.
+
+El roadmap conserva el alcance pendiente para planificación avanzada, riesgos, cumplimiento y reportes.
 
 CSS propio y JavaScript local. Para pruebas con el servidor embebido de PHP en loopback, define `AUDITPRO_DEV=1` y sirve `public/`. En producción usa HTTPS.

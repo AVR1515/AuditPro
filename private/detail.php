@@ -25,7 +25,10 @@ $next = $manager ? nextState($pdo,$audit) : null;
 <?php foreach ($tests as $test): $testKeys = $keys + ['test_id'=>$test['id']]; ?>
 <article><h3><?= e($test['title']) ?></h3><p class="muted"><?= e($test['status']) ?></p>
 <?php copyBlock('Procedimiento',$test['procedure_text']); if ($test['result_text'] !== null) copyBlock('Resultado',$test['result_text']); ?>
+<?php listAttachments($pdo,'test',(int) $test['id']); ?>
 <?php if ($auditor && $state === 'en_campo' && $test['status'] !== 'revisada'): ?>
+<details><summary>Adjuntar evidencia de prueba</summary><?php form('attach_test',$testKeys,false,true); ?>
+<label>Archivo PDF, PNG, JPEG o TXT de hasta 5 MiB<input type="file" name="attachment" accept=".pdf,.png,.jpg,.jpeg,.txt" required></label><button>Adjuntar</button></form></details>
 <details><summary>Documentar resultado</summary><?php form('result',$testKeys); ?>
 <label>Resultado y referencias<textarea name="result" required maxlength="12000"><?= e($test['result_text']) ?></textarea></label><button>Guardar resultado</button></form></details>
 <?php endif; if ($manager && $state === 'en_campo' && $test['status'] === 'documentada'): ?>
@@ -56,7 +59,11 @@ foreach ($actions as $action): $actionKeys = $keys + ['action_id'=>$action['id']
 <article><?php copyBlock('Acción',$action['description']); ?>
 <p><?= e($action['name']) ?> · Vence <?= e($action['due_date']) ?> · <?= e(str_replace('_',' ',$action['status'])) ?></p>
 <?php if ($action['evidence'] !== null) copyBlock('Evidencia presentada',$action['evidence']); ?>
-<?php if ($state === 'emitida' && $responsible && $action['status'] === 'abierta'): form('evidence',$actionKeys); ?>
+<?php listAttachments($pdo,'action',(int) $action['id']); ?>
+<?php if ($state === 'emitida' && $responsible && $action['status'] === 'abierta'): ?>
+<details><summary>Adjuntar evidencia de acción</summary><?php form('attach_action',$actionKeys,false,true); ?>
+<label>Archivo PDF, PNG, JPEG o TXT de hasta 5 MiB<input type="file" name="attachment" accept=".pdf,.png,.jpg,.jpeg,.txt" required></label><button>Adjuntar</button></form></details>
+<?php form('evidence',$actionKeys); ?>
 <label>Descripción y referencia de evidencia<textarea name="evidence" required maxlength="12000"></textarea></label><button>Enviar a verificación</button></form>
 <?php elseif ($state === 'emitida' && $manager && $action['status'] === 'en_verificacion'): form('verify',$actionKeys); ?>
 <label>Decisión<select name="decision"><option value="cerrada">Verificar y cerrar</option><option value="abierta">Devolver al responsable</option></select></label>

@@ -70,13 +70,16 @@ function mutate(PDO $pdo, array $user, string $op): ?int {
             query($pdo,'INSERT INTO tests(audit_id,title,procedure_text) VALUES (?,?,?)',[$id,field('title'),field('procedure',12000)]);
             $detail = $pdo->lastInsertId();
             break;
+        case 'attach_test':
         case 'result':
         case 'review':
         case 'finding':
             $test = positiveId('test_id');
             $row = query($pdo,'SELECT * FROM tests WHERE id=? AND audit_id=?',[$test,$id])->fetch();
             if (!$row || $state !== 'en_campo') throw new DomainException('Prueba no disponible.');
-            if ($op === 'result' && $auditor && $row['status'] !== 'revisada') {
+            if ($op === 'attach_test' && $auditor && $row['status'] !== 'revisada') {
+                storeAttachment($pdo,$actor,'test',$test);
+            } elseif ($op === 'result' && $auditor && $row['status'] !== 'revisada') {
                 query($pdo,"UPDATE tests SET result_text=?,prepared_by=?,status='documentada' WHERE id=?",[field('result',12000),$actor,$test]);
             } elseif ($op === 'review' && $manager && $row['status'] === 'documentada' && $actor !== (int) $row['prepared_by']) {
                 $decision = choice('decision',['revisada','pendiente']);
@@ -100,12 +103,15 @@ function mutate(PDO $pdo, array $user, string $op): ?int {
             query($pdo,'INSERT INTO actions(finding_id,owner_id,description,due_date) VALUES (?,?,?,?)',[$finding,$owner,field('description',12000),$date]);
             $detail = $pdo->lastInsertId();
             break;
+        case 'attach_action':
         case 'evidence':
         case 'verify':
             $action = positiveId('action_id');
             $row = query($pdo,'SELECT a.* FROM actions a JOIN findings f ON f.id=a.finding_id JOIN tests t ON t.id=f.test_id WHERE a.id=? AND t.audit_id=?',[$action,$id])->fetch();
             if (!$row || $state !== 'emitida') throw new DomainException('Acción no disponible.');
-            if ($op === 'evidence' && $user['role'] === 'responsable' && $actor === (int) $row['owner_id'] && $row['status'] === 'abierta') {
+            if ($op === 'attach_action' && $user['role'] === 'responsable' && $actor === (int) $row['owner_id'] && $row['status'] === 'abierta') {
+                storeAttachment($pdo,$actor,'action',$action);
+            } elseif ($op === 'evidence' && $user['role'] === 'responsable' && $actor === (int) $row['owner_id'] && $row['status'] === 'abierta') {
                 query($pdo,"UPDATE actions SET evidence=?,status='en_verificacion' WHERE id=?",[field('evidence',12000),$action]);
             } elseif ($op === 'verify' && $manager && $row['status'] === 'en_verificacion') {
                 $decision = choice('decision',['abierta','cerrada']);
