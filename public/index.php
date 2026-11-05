@@ -11,6 +11,7 @@ require __DIR__ . '/../private/plans.php';
 require __DIR__ . '/../private/hours.php';
 require __DIR__ . '/../private/reminders.php';
 require __DIR__ . '/../private/revisions.php';
+require __DIR__ . '/../private/account.php';
 start();
 $error = null;
 $user = null;
@@ -23,7 +24,13 @@ try {
         if (in_array((int) ($exception->errorInfo[1] ?? 0),[1049,1146],true)) redirect('install.php');
         throw $exception;
     }
-    if (isset($_SESSION['user'])) $user = query($pdo,'SELECT id,name,role FROM users WHERE id=? AND active=1',[$_SESSION['user']])->fetch() ?: null;
+    if (isset($_SESSION['user'])) {
+        $account = query($pdo,'SELECT id,name,role,password_hash FROM users WHERE id=? AND active=1',[$_SESSION['user']])->fetch();
+        if ($account && hash_equals(hash('sha256',$account['password_hash']),$_SESSION['password_version'] ?? '')) {
+            unset($account['password_hash']);
+            $user = $account;
+        }
+    }
     if (isset($_GET['export']) && $user && $user['role'] !== 'responsable') {
         planCsv(planRows($pdo,$user,planFilters()));
     }
@@ -56,7 +63,7 @@ try {
             $hash = $account['password_hash'] ?? '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi';
             if (!password_verify($password,$hash) || !$account) throw new DomainException('Credenciales inválidas.');
             session_regenerate_id(true);
-            $_SESSION = ['user'=>$account['id'],'csrf'=>bin2hex(random_bytes(32))];
+            $_SESSION = ['user'=>$account['id'],'password_version'=>hash('sha256',$hash),'csrf'=>bin2hex(random_bytes(32))];
             redirect();
         }
         if (!$user) throw new DomainException('Inicia sesión para continuar.');
@@ -80,6 +87,14 @@ try {
             markReminderRead($pdo,$user,positiveId('reminder'));
             $pdo->commit();
             redirect('index.php?view=inbox');
+        }
+        if ($op === 'password') {
+            updatePassword($pdo,$user);
+            $pdo->commit();
+            $_SESSION = [];
+            session_regenerate_id(true);
+            $_SESSION['notice'] = 'Contraseña actualizada. Inicia sesión de nuevo.';
+            redirect();
         }
         $id = mutate($pdo,$user,$op);
         $pdo->commit();
@@ -127,6 +142,7 @@ function copyBlock(string $label, ?string $value): void {
 page($audit && $user['role'] !== 'responsable' ? $audit['title'] : ($user ? 'Área de trabajo' : 'Iniciar sesión'),$user);
 errorBox($error);
 if (!$user): ?>
+<?php if (isset($_SESSION['notice'])): ?><p role="status"><?= e($_SESSION['notice']) ?></p><?php unset($_SESSION['notice']); endif; ?>
 <section><?php form('login'); ?>
 <label>Correo<input name="email" type="email" autocomplete="username" required></label>
 <label>Contraseña<input name="password" type="password" autocomplete="current-password" required></label>
@@ -159,6 +175,11 @@ if (($_GET['view'] ?? '') === 'plans' && $manager && !$audit) {
 }
 if ($reportView) {
     require __DIR__ . '/../private/report.php';
+    endPage(true);
+    return;
+}
+if (($_GET['view'] ?? '') === 'account' && !$audit) {
+    require __DIR__ . '/../private/account-view.php';
     endPage(true);
     return;
 }

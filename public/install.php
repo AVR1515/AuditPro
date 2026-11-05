@@ -22,7 +22,7 @@ try {
         $email = strtolower(field('email', 254));
         $name = field('name', 160);
         $password = $_POST['password'] ?? '';
-        if (!filter_var($email, FILTER_VALIDATE_EMAIL) || !is_string($password) || strlen($password) < 12 || strlen($password) > 72 || str_contains($password, "\0")) {
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL) || !validPassword($password)) {
             throw new DomainException('Usa un correo válido y una contraseña de entre 12 y 72 bytes.');
         }
         $database = $config['database'];

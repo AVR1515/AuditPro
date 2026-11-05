@@ -66,6 +66,9 @@ function field(string $key, int $max = 180): string {
     }
     return trim($value);
 }
+function validPassword(mixed $password): bool {
+    return is_string($password) && strlen($password) >= 12 && strlen($password) <= 72 && !str_contains($password,"\0");
+}
 function dateField(string $key): string {
     $date = field($key,10);
     $parsed = DateTimeImmutable::createFromFormat('!Y-m-d',$date);
@@ -99,6 +102,7 @@ function page(string $title, ?array $user = null): void { ?>
 <?php
 $sections = [''=>'Expedientes','inbox'=>'Bandeja'];
 if (in_array($user['role'],['admin','supervisor'],true)) $sections += ['plans'=>'Plan anual','universe'=>'Universo auditable','grc'=>'Riesgos y cumplimiento'];
+$sections['account'] = 'Mi cuenta';
 foreach ($sections as $key=>$label):
     $href = 'index.php' . ($key ? '?view=' . $key : '');
     $selected = ($_GET['view'] ?? '') === $key;

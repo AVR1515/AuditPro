@@ -35,7 +35,7 @@ function mutate(PDO $pdo, array $user, string $op): ?int {
     if ($op === 'user' && $user['role'] === 'admin') {
         $email = strtolower(field('email',254));
         $password = $_POST['password'] ?? null;
-        if (!filter_var($email,FILTER_VALIDATE_EMAIL) || !is_string($password) || strlen($password)<12 || strlen($password)>72 || str_contains($password,"\0")) throw new DomainException('Revisa el correo y usa una contraseña de 12 a 72 bytes.');
+        if (!filter_var($email,FILTER_VALIDATE_EMAIL) || !validPassword($password)) throw new DomainException('Revisa el correo y usa una contraseña de 12 a 72 bytes.');
         if (query($pdo, 'SELECT 1 FROM users WHERE email=?', [$email])->fetchColumn()) throw new DomainException('Este correo ya está registrado.');
         query($pdo,'INSERT INTO users(email,name,password_hash,role) VALUES (?,?,?,?)',[$email,field('name',160),password_hash($password,PASSWORD_DEFAULT),choice('role',ROLES)]);
         record($pdo,$actor,null,'usuario_creado',$pdo->lastInsertId());
