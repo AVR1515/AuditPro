@@ -90,7 +90,9 @@ function mutate(PDO $pdo, array $user, string $op): ?int {
             if ($op === 'attach_test' && $auditor && $row['status'] !== 'revisada') {
                 storeAttachment($pdo,$actor,'test',$test);
             } elseif ($op === 'result' && $auditor && $row['status'] !== 'revisada') {
-                query($pdo,"UPDATE tests SET result_text=?,prepared_by=?,status='documentada' WHERE id=?",[field('result',12000),$actor,$test]);
+                $result = field('result',12000);
+                query($pdo,"UPDATE tests SET result_text=?,prepared_by=?,status='documentada' WHERE id=?",[$result,$actor,$test]);
+                query($pdo,'INSERT INTO test_revisions(test_id,author_id,result_text) VALUES (?,?,?)',[$test,$actor,$result]);
             } elseif ($op === 'review' && $manager && $row['status'] === 'documentada' && $actor !== (int) $row['prepared_by']) {
                 $decision = choice('decision',['revisada','pendiente']);
                 query($pdo,'UPDATE tests SET status=?, reviewed_by=? WHERE id=?',[$decision,$decision === 'revisada' ? $actor : null,$test]);
@@ -126,7 +128,9 @@ function mutate(PDO $pdo, array $user, string $op): ?int {
             } elseif ($op === 'attach_action' && $user['role'] === 'responsable' && $actor === (int) $row['owner_id'] && $row['status'] === 'abierta') {
                 storeAttachment($pdo,$actor,'action',$action);
             } elseif ($op === 'evidence' && $user['role'] === 'responsable' && $actor === (int) $row['owner_id'] && $row['status'] === 'abierta') {
-                query($pdo,"UPDATE actions SET evidence=?,status='en_verificacion' WHERE id=?",[field('evidence',12000),$action]);
+                $evidence = field('evidence',12000);
+                query($pdo,"UPDATE actions SET evidence=?,status='en_verificacion' WHERE id=?",[$evidence,$action]);
+                query($pdo,'INSERT INTO action_revisions(action_id,author_id,evidence) VALUES (?,?,?)',[$action,$actor,$evidence]);
             } elseif ($op === 'verify' && $manager && $row['status'] === 'en_verificacion') {
                 $decision = choice('decision',['abierta','cerrada']);
                 query($pdo,'UPDATE actions SET status=? WHERE id=?',[$decision,$action]);

@@ -5,7 +5,9 @@ $state = $audit['status'];
 $actions = query($pdo,'SELECT a.*,u.name FROM actions a JOIN users u ON u.id=a.owner_id JOIN findings f ON f.id=a.finding_id JOIN tests t ON t.id=f.test_id WHERE t.audit_id=?' .
     ($responsible ? " AND a.owner_id=? AND EXISTS (SELECT 1 FROM audits d WHERE d.id=t.audit_id AND d.status IN ('emitida','cerrada'))" : '') . ' ORDER BY a.due_date',
     $responsible ? [$id,$user['id']] : [$id])->fetchAll();
+$actionHistory = revisionsForAudit($pdo,'action',(int) $id,$responsible ? (int) $user['id'] : null);
 if (!$responsible):
+$testHistory = revisionsForAudit($pdo,'test',(int) $id);
 $tests = query($pdo,'SELECT * FROM tests WHERE audit_id=? ORDER BY id',[$id])->fetchAll();
 $findings = query($pdo,'SELECT f.*,t.title AS test_title FROM findings f JOIN tests t ON t.id=f.test_id WHERE t.audit_id=? ORDER BY f.id',[$id])->fetchAll();
 $evaluation = query($pdo,'SELECT r.* FROM audit_assessment_links a JOIN risk_assessments r ON r.id=a.assessment_id WHERE a.audit_id=?',[$id])->fetch();
@@ -33,6 +35,7 @@ $next = $manager ? nextState($pdo,$audit) : null;
 <article><h3><?= e($test['title']) ?></h3><p class="muted"><?= e($test['status']) ?></p>
 <?php copyBlock('Procedimiento',$test['procedure_text']); if ($test['result_text'] !== null) copyBlock('Resultado',$test['result_text']); ?>
 <?php if (!empty($testControls[$test['id']])) copyBlock('Controles vinculados',implode(' · ',$testControls[$test['id']])); ?>
+<?php showRevisions($testHistory[$test['id']] ?? []); ?>
 <?php listAttachments($pdo,'test',(int) $test['id']); ?>
 <?php if ($auditor && $state === 'en_campo' && $test['status'] !== 'revisada'): ?>
 <details><summary>Adjuntar evidencia de prueba</summary><?php form('attach_test',$testKeys,false,true); ?>
@@ -72,6 +75,7 @@ foreach ($actions as $action): $actionKeys = $keys + ['action_id'=>$action['id']
 <label>Nuevo vencimiento<input type="date" name="due" required></label>
 <label>Justificación<input name="note" maxlength="150" required></label><button>Guardar prórroga</button></form></details>
 <?php endif; ?>
+<?php showRevisions($actionHistory[$action['id']] ?? []); ?>
 <?php listAttachments($pdo,'action',(int) $action['id']); ?>
 <?php if ($state === 'emitida' && $responsible && $action['status'] === 'abierta'): ?>
 <details><summary>Adjuntar evidencia de acción</summary><?php form('attach_action',$actionKeys,false,true); ?>

@@ -10,13 +10,19 @@ require __DIR__ . '/../private/inbox.php';
 require __DIR__ . '/../private/plans.php';
 require __DIR__ . '/../private/hours.php';
 require __DIR__ . '/../private/reminders.php';
+require __DIR__ . '/../private/revisions.php';
 start();
 $error = null;
 $user = null;
 $audit = null;
 try {
-    $pdo = db(config());
-    if (!$pdo->query('SELECT id FROM installation WHERE id=1')->fetchColumn()) redirect('install.php');
+    try {
+        $pdo = db(config());
+        if (!$pdo->query('SELECT id FROM installation WHERE id=1')->fetchColumn()) redirect('install.php');
+    } catch (PDOException $exception) {
+        if (in_array((int) ($exception->errorInfo[1] ?? 0),[1049,1146],true)) redirect('install.php');
+        throw $exception;
+    }
     if (isset($_SESSION['user'])) $user = query($pdo,'SELECT id,name,role FROM users WHERE id=? AND active=1',[$_SESSION['user']])->fetch() ?: null;
     if (isset($_GET['export']) && $user && $user['role'] !== 'responsable') {
         planCsv(planRows($pdo,$user,planFilters()));
