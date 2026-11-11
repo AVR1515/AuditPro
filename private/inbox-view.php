@@ -55,6 +55,9 @@ $requestToReview = count(array_filter($requestTasks,static fn(array $request): b
 </tbody></table></div><?php endif; ?></section>
 <?php if (manage($user) && !restrictedSupervisor($user)): ?>
 <section><h2>Alertas de indicadores de riesgo (KRI)</h2>
+<?php $staleIndicators=staleKriInbox($pdo,$today); ?>
+<?php if ($staleIndicators): ?><h3>Indicadores sin medición reciente (<?= count($staleIndicators) ?>)</h3><ul>
+<?php foreach ($staleIndicators as $stale): ?><li><?= e($stale['title']) ?> · <?= e($stale['risk_title']) ?> · Medición máxima cada <?= e($stale['review_interval_days']) ?> días · <?= e($stale['observed_on'] ?? 'Sin mediciones') ?></li><?php endforeach; ?></ul><?php endif; ?>
 <?php $kriAlerts = breachedKriInbox($pdo); ?>
 <p class="muted">Indicadores cuyo último valor documentado está fuera del umbral. Las mediciones se conservan en Riesgos y cumplimiento.</p>
 <?php if (!$kriAlerts): ?><p class="muted">Sin umbrales excedidos en la última medición.</p><?php else: ?>
