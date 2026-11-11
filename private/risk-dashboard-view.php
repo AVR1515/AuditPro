@@ -2,7 +2,7 @@
 $dash=riskDashboard($pdo,(int)date('Y'));
 ?>
 <section><h2>Tablero ejecutivo de cobertura y riesgos</h2>
-<p class="muted">Indicadores globales del universo auditable. Las brechas se calculan con el año de la última auditoría vinculada y el ciclo de la unidad como aproximación; no sustituyen la valoración profesional de cobertura.</p>
+<p class="muted">Indicadores globales del universo auditable. Las brechas utilizan la fecha de cierre efectiva cuando existe y el año de auditoría como estimación para expedientes históricos sin fecha; no sustituyen la valoración profesional de cobertura.</p>
 <dl class="metrics">
 <div><dt>Unidades auditables</dt><dd><?= e($dash['units']) ?></dd></div>
 <div><dt>Brechas de cobertura</dt><dd><?= e($dash['gaps']) ?></dd></div>
