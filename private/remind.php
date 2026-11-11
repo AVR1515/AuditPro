@@ -6,10 +6,13 @@ if (PHP_SAPI !== 'cli') {
 }
 require __DIR__ . '/bootstrap.php';
 require __DIR__ . '/reminders.php';
+require __DIR__ . '/escalations.php';
 try {
     $pdo = db(config());
     if (!$pdo->query('SELECT id FROM installation WHERE id=1')->fetchColumn()) throw new RuntimeException('Instalación pendiente.');
-    generateReminders($pdo,new DateTimeImmutable('today'));
+    $today=new DateTimeImmutable('today');
+    generateReminders($pdo,$today);
+    generateEscalations($pdo,$today);
     fwrite(STDOUT,"Recordatorios procesados.\n");
 } catch (Throwable $exception) {
     fwrite(STDERR,'No se procesaron los recordatorios (' . get_class($exception) . ' ' . $exception->getCode() . ").\n");
