@@ -1,0 +1,11 @@
+ALTER TABLE users ADD COLUMN unit_restricted BOOLEAN NOT NULL DEFAULT FALSE;
+CREATE TABLE IF NOT EXISTS supervisor_unit_grants (
+ user_id BIGINT UNSIGNED NOT NULL,
+ unit_id BIGINT UNSIGNED NOT NULL,
+ granted_by BIGINT UNSIGNED NOT NULL,
+ created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+ PRIMARY KEY (user_id,unit_id),
+ FOREIGN KEY(user_id) REFERENCES users(id),
+ FOREIGN KEY(unit_id) REFERENCES auditable_units(id),
+ FOREIGN KEY(granted_by) REFERENCES users(id)
+) ENGINE=InnoDB;
