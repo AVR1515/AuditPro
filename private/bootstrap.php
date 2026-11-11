@@ -102,6 +102,7 @@ function page(string $title, ?array $user = null): void { ?>
 <?php
 $sections = isGrcSpecialist($user) ? ['grc'=>'Riesgos y cumplimiento'] : [''=>'Expedientes','inbox'=>'Bandeja'];
 if (manage($user)) $sections += ['plans'=>'Plan anual','universe'=>'Universo auditable','grc'=>'Riesgos y cumplimiento'];
+if ($user['role'] === 'auditor' || manage($user)) $sections['templates'] = 'Plantillas de pruebas';
 $sections['account'] = 'Mi cuenta';
 foreach ($sections as $key=>$label):
     $href = 'index.php' . ($key ? '?view=' . $key : '');

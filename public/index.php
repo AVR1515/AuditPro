@@ -14,6 +14,7 @@ require __DIR__ . '/../private/revisions.php';
 require __DIR__ . '/../private/account.php';
 require __DIR__ . '/../private/obligation-import.php';
 require __DIR__ . '/../private/requests.php';
+require __DIR__ . '/../private/templates.php';
 start();
 $error = null;
 $user = null;
@@ -104,6 +105,11 @@ try {
             if ($op !== 'preview_obligations') unset($_SESSION['obligation_import']);
             redirect($destination);
         }
+        if (in_array($op,TEMPLATE_OPS,true)) {
+            $id = saveTemplate($pdo,$user,$op);
+            $pdo->commit();
+            redirect($id ? 'index.php?id=' . $id : 'index.php?view=templates');
+        }
         if (in_array($op,REQUEST_OPS,true)) {
             $id = saveEvidenceRequest($pdo,$user,$op);
             $pdo->commit();
@@ -175,6 +181,11 @@ if (($_GET['view'] ?? '') === 'universe' && $manager && !$audit) {
 }
 if ($view === 'grc' && canGrc($user) && !$audit) {
     require __DIR__ . '/../private/grc-view.php';
+    endPage(true);
+    return;
+}
+if ($view === 'templates' && canViewTemplates($user) && !$audit) {
+    require __DIR__ . '/../private/templates-view.php';
     endPage(true);
     return;
 }

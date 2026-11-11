@@ -30,6 +30,13 @@ $next = $manager ? nextState($pdo,$audit) : null;
 <?php require __DIR__ . '/hours-view.php'; ?>
 <?php require __DIR__ . '/requests-view.php'; ?>
 <section><h2>Pruebas y papeles de trabajo</h2>
+<?php if ($auditor && $state === 'en_campo' && ($availableTemplates = templateCatalog($pdo))): ?>
+<details><summary>Crear prueba desde plantilla</summary><?php form('template_apply',$keys); ?>
+<label>Procedimiento estándar<select name="template_id" required>
+<?php foreach ($availableTemplates as $template): ?><option value="<?= e($template['id']) ?>"><?= e($template['category']) ?> · <?= e($template['title']) ?></option><?php endforeach; ?>
+</select></label><p class="muted">El procedimiento se copia a esta auditoría y no cambiará si se archiva la plantilla.</p>
+<button>Agregar prueba desde plantilla</button></form></details>
+<?php endif; ?>
 <?php if ($auditor && $state === 'en_campo'): ?><details><summary>Nueva prueba</summary><?php form('test',$keys); ?>
 <label>Título<input name="title" required maxlength="180"></label><label>Procedimiento<textarea name="procedure" required maxlength="12000"></textarea></label><button>Crear prueba</button></form></details><?php endif; ?>
 <?php foreach ($tests as $test): $testKeys = $keys + ['test_id'=>$test['id']]; ?>
