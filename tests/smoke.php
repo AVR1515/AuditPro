@@ -25,6 +25,7 @@ require __DIR__ . '/../private/policies.php';
 require __DIR__ . '/../private/overview.php';
 require __DIR__ . '/../private/retention.php';
 require __DIR__ . '/../private/preflight.php';
+require __DIR__ . '/../private/release-readiness.php';
 
 function check(bool $ok, string $message): void {
     if (!$ok) throw new RuntimeException('FALLÓ: ' . $message);
@@ -581,6 +582,17 @@ $missing=preflightChecks($pdo,[
  'install_user'=>'','install_password'=>'','install_token'=>'token-pendiente'
 ]);
 check(!preflightReady($missing),'Preflight detecta instalador no deshabilitado');
+deny(static fn()=>releaseReadiness($pdo,[
+ 'user'=>'test_runner','password'=>'fake_local_only','install_token'=>'',
+ 'install_user'=>'','install_password'=>''
+],$auditor),'El auditor no consulta preparación administrativa del lanzamiento');
+$release=releaseReadiness($pdo,[
+ 'user'=>'test_runner','password'=>'fake_local_only','install_token'=>'',
+ 'install_user'=>'','install_password'=>''
+],$admin);
+check($release['preflight_ready'] && isset($release['scheduler']['successful_runs']),
+ 'Dashboard de salida refleja controles reales sin aprobar el piloto externo');
+
 putenv('AUDITPRO_CONFIG');
 
 // Políticas: roles, obligaciones, segregación de aprobación y versiones inmutables.
