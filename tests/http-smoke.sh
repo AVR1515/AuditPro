@@ -141,6 +141,27 @@ for specialist in riesgos cumplimiento; do
   fi
 done
 
+# Administrador de pruebas adicional: diagnóstico y declaraciones por versión.
+adminCookies="$tmp/admin-cookies.txt"
+curl --fail --silent --show-error -c "$adminCookies" "$BASE_URL/index.php" > "$tmp/admin-login.html"
+adminCsrf="$(grep -o 'name="csrf" value="[^"]*"' "$tmp/admin-login.html" | head -n1 | cut -d '"' -f 4)"
+test -n "$adminCsrf"
+curl --silent --show-error -b "$adminCookies" -c "$adminCookies" \
+  -D "$tmp/admin-headers.txt" -o "$tmp/admin-post.html" \
+  --data-urlencode "csrf=$adminCsrf" --data-urlencode 'op=login' \
+  --data-urlencode 'email=segundo-admin@example.test' \
+  --data-urlencode 'password=TestPass123456!' "$BASE_URL/index.php"
+grep -Eq '^HTTP/1\.[01] 303|^HTTP/1\.[01] 302' "$tmp/admin-headers.txt"
+curl --fail --silent --show-error -b "$adminCookies" \
+  "$BASE_URL/index.php?view=readiness&sha=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" > "$tmp/admin-readiness.html"
+grep -q 'Preparación para el piloto y producción' "$tmp/admin-readiness.html"
+grep -q 'Declaraciones conformes: 0 de 10' "$tmp/admin-readiness.html"
+grep -q 'PENDIENTE DE APROBACIÓN EXTERNA' "$tmp/admin-readiness.html"
+curl --fail --silent --show-error -b "$adminCookies" \
+  "$BASE_URL/index.php?view=retention" > "$tmp/admin-retention.html"
+grep -q 'Solicitar purgado irreversible' "$tmp/admin-retention.html" || \
+  grep -q 'Retención de evidencias' "$tmp/admin-retention.html"
+
 # Un formulario sin CSRF válido no debe ejecutar mutaciones.
 curl --fail --silent --show-error -b "$cookies" \
   --data-urlencode 'csrf=no-es-valido' --data-urlencode 'op=password' \
