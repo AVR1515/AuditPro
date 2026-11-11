@@ -128,7 +128,11 @@ Además de las pruebas de integración con MySQL, GitHub Actions inicia un servi
 
 **Previsión multianual:** la vista consolida los planes aprobados, elimina duplicados de unidad/año tomando el plan aprobado más reciente y muestra carga versus capacidad por auditor. Las estimaciones no sustituyen la aprobación de recursos.
 
-Antes de actualizar una instalación existente, realiza una copia de seguridad y aplica `private/upgrade-022.sql`, `private/upgrade-023.sql` y `private/upgrade-024.sql` en orden. Otorga SELECT/UPDATE para `audits.closed_on`, SELECT/INSERT para `evidence_request_attachments` y SELECT/UPDATE para `grc_kri_indicators.review_interval_days`. Ejecuta el diagnóstico de preflight y prueba los roles antes del piloto.
+Antes de actualizar una instalación existente, realiza una copia de seguridad y aplica `private/upgrade-022.sql`, `private/upgrade-023.sql`, `private/upgrade-024.sql` y `private/upgrade-025.sql` en orden. Otorga SELECT/UPDATE para `audits.closed_on`, SELECT/INSERT para `evidence_request_attachments` y SELECT/UPDATE para `grc_kri_indicators.review_interval_days`. Ejecuta el diagnóstico de preflight y prueba los roles antes del piloto.
+
+## Revalidación periódica de riesgos aceptados (upgrade-025)
+
+Las aceptaciones aprobadas pueden revisarse de nuevo desde el expediente, incluso cuando la auditoría está cerrada. Una cuenta supervisora distinta de quien solicitó la aceptación registra fundamento, evidencia y fecha futura; se conserva un historial inmutable del vencimiento previo y del revisor. La revalidación no convierte automáticamente una acción aceptada en una remediación verificada. Ejecuta `private/upgrade-025.sql` después de 024, y concede SELECT/INSERT en `action_risk_reviews` y UPDATE en `action_risk_acceptances`.
 
 ## XAMPP en localhost
 
