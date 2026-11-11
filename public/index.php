@@ -24,6 +24,7 @@ require __DIR__ . '/../private/kri.php';
 require __DIR__ . '/../private/risk-dashboard.php';
 require __DIR__ . '/../private/escalations.php';
 require __DIR__ . '/../private/unit-access.php';
+require __DIR__ . '/../private/scoped-overview.php';
 require __DIR__ . '/../private/retention.php';
 start();
 $error = null;
@@ -244,6 +245,11 @@ endPage(); return; endif; ?>
 $manager = manage($user);
 $auditor = $user['role'] === 'auditor';
 $responsible = $user['role'] === 'responsable';
+if ($view === 'my-units' && restrictedSupervisor($user) && !$audit) {
+    require __DIR__ . '/../private/scoped-overview-view.php';
+    endPage(true);
+    return;
+}
 if ($view === 'retention' && $user['role'] === 'admin' && !$audit) {
     require __DIR__ . '/../private/retention-view.php';
     endPage(true);
