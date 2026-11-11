@@ -24,6 +24,8 @@ jobs:
           grep -q "upgrade-016.sql" public/install.php
           grep -q "upgrade-017.sql" public/install.php
           grep -q "upgrade-018.sql" public/install.php
+          grep -q "upgrade-019.sql" public/install.php
+          grep -q "unit-access.php" public/index.php
           grep -q "escalations.php" public/index.php
           test -s private/recovery.php
           test -s private/recover-admin.php
