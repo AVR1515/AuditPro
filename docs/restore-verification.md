@@ -1,6 +1,6 @@
 # Verificación real de respaldos y restauración
 
-Esta guía se ejecuta **en el servidor administrado por la organización**.
+Esta guía se ejecuta **en el servidor administrado por la organización**. Como comprobación técnica adicional, el CI ejecuta `bash tests/restore-smoke.sh` exclusivamente con la base ficticia `auditpro_test`, crea una restauración aislada y compara evidencias y registros. La prueba de CI no sustituye esta restauración real.
 Nunca se recupera una copia con datos reales dentro de GitHub Actions ni se
 publican respaldos, claves o capturas con datos personales en el repositorio.
 
