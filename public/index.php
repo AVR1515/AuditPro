@@ -18,6 +18,7 @@ require __DIR__ . '/../private/templates.php';
 require __DIR__ . '/../private/capacity.php';
 require __DIR__ . '/../private/risk-acceptance.php';
 require __DIR__ . '/../private/attestations.php';
+require __DIR__ . '/../private/exceptions.php';
 start();
 $error = null;
 $user = null;
@@ -78,6 +79,11 @@ try {
             assess($pdo,$user,$op);
             $pdo->commit();
             redirect('index.php?view=universe');
+        }
+        if (in_array($op,EXCEPTION_OPS,true)) {
+            saveComplianceException($pdo,$user,$op);
+            $pdo->commit();
+            redirect('index.php?view=grc');
         }
         if ($op === 'obligation_attest') {
             saveAttestation($pdo,$user);
