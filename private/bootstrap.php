@@ -47,6 +47,9 @@ function start(): void {
     header("Content-Security-Policy: default-src 'self'; object-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'");
     header('Cache-Control: no-store');
     header('X-Content-Type-Options: nosniff');
+    header('Referrer-Policy: no-referrer');
+    header('X-Frame-Options: DENY');
+    if ($https) header('Strict-Transport-Security: max-age=31536000');
     ini_set('session.use_strict_mode', '1');
     session_set_cookie_params(['secure'=>$https, 'httponly'=>true, 'samesite'=>'Lax']);
     session_start();
