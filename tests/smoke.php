@@ -50,7 +50,7 @@ if ($pdo->query('SELECT DATABASE()')->fetchColumn() !== 'auditpro_test') {
 }
 foreach (array_merge(['schema.sql'],array_map(
     static fn(int $number): string => sprintf('upgrade-%03d.sql',$number),
-    range(2,23)
+    range(2,24)
 )) as $migration) {
     $contents = file_get_contents(__DIR__.'/../private/'.$migration);
     if ($contents === false) throw new RuntimeException('Falta '.$migration);
@@ -58,7 +58,7 @@ foreach (array_merge(['schema.sql'],array_map(
         if (trim($sql) !== '') $pdo->exec($sql);
     }
 }
-echo "Migraciones 002–023 y esquema instalados.\n";
+echo "Migraciones 002–024 y esquema instalados.\n";
 foreach (['admin','supervisor','auditor','responsable'] as $role) {
     query($pdo,'INSERT INTO users(email,name,password_hash,role) VALUES (?,?,?,?)',
         [$role.'@example.test',ucfirst($role),password_hash('TestPass123456!',PASSWORD_DEFAULT),$role]);
@@ -228,6 +228,22 @@ $_POST=['plan_id'=>(string)$multiId,'unit_id'=>(string)$unit,'auditor_id'=>'3',
  'target_year'=>'2028','hours'=>'100'];
 deny(static fn()=>saveMultiyear($pdo,$supervisor,'multiyear_add'),
  'Plan aprobado es inmutable');
+// Proyección consolidada: un plan aprobado posterior sustituye la unidad/año previa.
+$forecast=multiyearForecast($pdo);
+check(count($forecast)===1 && (int)$forecast[0]['forecast_minutes']===10800,
+ 'Previsión inicial suma horas de planes aprobados');
+$_POST=['title'=>'Reprogramación','start_year'=>'2027','end_year'=>'2029','rationale'=>'Ajuste de carga'];
+saveMultiyear($pdo,$admin,'multiyear_create');
+$replacementId=(int)query($pdo,'SELECT MAX(id) FROM multiyear_plans')->fetchColumn();
+$_POST=['plan_id'=>(string)$replacementId,'unit_id'=>(string)$unit,'auditor_id'=>'3',
+ 'target_year'=>'2027','hours'=>'60'];
+saveMultiyear($pdo,$admin,'multiyear_add');
+$_POST=['plan_id'=>(string)$replacementId];
+saveMultiyear($pdo,$supervisor,'multiyear_approve');
+$forecast=multiyearForecast($pdo);
+check(count($forecast)===1 && (int)$forecast[0]['forecast_minutes']===3600 &&
+ (int)$forecast[0]['unit_count']===1,'El plan aprobado más reciente reemplaza la misma unidad/año');
+
 
 // Riesgos periódicos e indicadores KRI, con roles y conservación de historial.
 query($pdo,'INSERT INTO grc_risks(unit_id,title,owner_name,inherent,residual,appetite,treatment,review_on)
@@ -262,6 +278,23 @@ $_POST=['risk_id'=>(string)$riskId,'indicator_id'=>(string)$kriId];
 deny(static fn()=>saveKri($pdo,$auditor,'kri_archive'),'Auditor no archiva indicadores');
 saveKri($pdo,$admin,'kri_archive');
 check(count(breachedKriInbox($pdo))===0,'Indicador archivado deja de alertar');
+// Vigencia KRI: un indicador sin mediciones dentro de su intervalo genera alerta.
+$_POST=['risk_id'=>(string)$riskId,'title'=>'KRI de periodicidad','unit'=>'%',
+ 'direction'=>'maximo','threshold'=>'10','review_interval_days'=>'30'];
+saveKri($pdo,$admin,'kri_create');
+$periodicId=(int)query($pdo,'SELECT MAX(id) FROM grc_kri_indicators WHERE risk_id=?',[$riskId])->fetchColumn();
+query($pdo,"UPDATE grc_kri_indicators SET created_at=DATE_SUB(CURRENT_DATE(), INTERVAL 40 DAY)
+ WHERE id=?",[$periodicId]);
+check(count(staleKriInbox($pdo,new DateTimeImmutable('today')))===1,
+ 'KRI sin medición se alerta después de su intervalo');
+$_POST=['risk_id'=>(string)$riskId,'indicator_id'=>(string)$periodicId,
+ 'observed_on'=>date('Y-m-d'),'value'=>'2','evidence'=>'Informe vigente'];
+saveKri($pdo,$admin,'kri_measure');
+check(count(staleKriInbox($pdo,new DateTimeImmutable('today')))===0,
+ 'Medición actualiza la vigencia del indicador');
+$_POST=['risk_id'=>(string)$riskId,'indicator_id'=>(string)$periodicId];
+saveKri($pdo,$admin,'kri_archive');
+
 
 $dashboard=riskDashboard($pdo,(int)date('Y'));
 check($dashboard['units']===1 && $dashboard['risks']===1,'Tablero cuenta unidades y riesgos');
@@ -359,6 +392,11 @@ query($pdo,"INSERT INTO grc_risks(unit_id,title,owner_name,inherent,residual,app
 check(count(scopedRiskOverview($pdo,$restrictedUser))===1,'No expone riesgos de otras unidades');
 check(count(scopedUnitCoverage($pdo,$restrictedUser))===1,
  'Cobertura excluye unidades no autorizadas');
+$scopedPlan=scopedAnnualPlanning($pdo,$restrictedUser);
+check(count($scopedPlan)===1 && (int)$scopedPlan[0]['id']===$auditId &&
+ (int)$scopedPlan[0]['planned_minutes']===9000,
+ 'Plan operativo por unidad excluye expediente ajeno y conserva horas');
+
 
 $authorizedRisk=(int)query($pdo,'SELECT id FROM grc_risks WHERE unit_id=? ORDER BY id DESC LIMIT 1',[$unit])->fetchColumn();
 $foreignRisk=(int)query($pdo,'SELECT id FROM grc_risks WHERE unit_id=? ORDER BY id DESC LIMIT 1',[$otherUnit])->fetchColumn();
