@@ -15,6 +15,12 @@ jobs:
         run: |
           set -e
           find . -type f -name '*.php' -print0 | xargs -0 -n1 php -l
+      - name: Revisar sintaxis de scripts de operación
+        run: |
+          bash -n tests/http-smoke.sh
+          bash -n tests/deployment-probe.sh
+          test -s docs/production-release-gates.md
+          test -s docs/restore-verification.md
       - name: Verificar migración de solicitudes
         run: |
           test -s private/upgrade-010.sql
