@@ -9,6 +9,8 @@ cookies="$tmp/cookies.txt"
 # Página pública de acceso, cookie de sesión y CSRF generado por servidor real.
 curl --fail --silent --show-error -c "$cookies" "$BASE_URL/index.php" > "$tmp/login.html"
 grep -q 'Iniciar sesión' "$tmp/login.html"
+grep -q 'Saltar al contenido principal' "$tmp/login.html"
+grep -q 'id="main-content"' "$tmp/login.html"
 csrf="$(grep -o 'name="csrf" value="[^"]*"' "$tmp/login.html" | head -n1 | cut -d '"' -f 4)"
 test -n "$csrf"
 
