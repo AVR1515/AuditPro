@@ -15,7 +15,7 @@ $multiAuditors = $pdo->query("SELECT id,name FROM users WHERE role='auditor' AND
 <label>Motivo y criterios<textarea name="rationale" maxlength="12000" required></textarea></label>
 <button>Crear borrador</button></form></details>
 <?php if (!$multiPlans): ?><p class="muted">No hay horizontes multianuales registrados.</p><?php endif; ?>
-<?php foreach ($multiPlans as $plan): $rows = $multiItems[$plan['id']] ?? []; ?>
+<?php foreach ($multiPlans as $plan): $rows = $multiItems[$plan['id']] ?? []; $load = multiyearLoad($pdo,(int)$plan['id']); ?>
 <article>
 <h3><?= e($plan['title']) ?> · <?= e($plan['start_year']) ?>–<?= e($plan['end_year']) ?></h3>
 <p class="muted">Creado por <?= e($plan['creator_name']) ?> · <?= e($plan['created_at']) ?>
@@ -25,15 +25,17 @@ $multiAuditors = $pdo->query("SELECT id,name FROM users WHERE role='auditor' AND
 <?php if ($rows): ?>
 <div class="table"><table><thead><tr>
 <th scope="col">Año</th><th scope="col">Unidad</th><th scope="col">Riesgo fijado</th>
-<th scope="col">Auditor</th><th scope="col">Horas estimadas</th><th scope="col">Capacidad anual</th>
+<th scope="col">Auditor</th><th scope="col">Horas estimadas</th><th scope="col">Carga del plan</th><th scope="col">Capacidad anual</th>
 </tr></thead><tbody>
 <?php foreach ($rows as $item):
 $capacity = $item['available_minutes'] === null ? null : (int) $item['available_minutes'];
+$planLoad = (int)($load[$item['auditor_id'].':'.$item['target_year']]['planned_minutes'] ?? 0);
 ?>
 <tr><td><?= e($item['target_year']) ?></td><td><?= e($item['unit_name']) ?></td>
 <td><?= e($item['risk_rating']) ?> · <?= e($item['risk_score']) ?>/25</td>
 <td><?= e($item['auditor_name']) ?></td><td><?= e(displayHours((int)$item['estimated_minutes'])) ?></td>
-<td><?= $capacity === null ? 'Sin configurar' : e(displayHours($capacity)) ?></td></tr>
+<td><?= e(displayHours($planLoad)) ?></td>
+<td><?= $capacity === null ? 'Sin configurar' : ($planLoad > $capacity ? 'Sobreasignado · ' : 'Dentro de capacidad · ') . e(displayHours($capacity)) ?></td></tr>
 <?php endforeach; ?></tbody></table></div>
 <?php else: ?><p class="muted">Todavía no hay unidades programadas.</p><?php endif; ?>
 <?php if ($plan['approved_by'] === null): ?>
