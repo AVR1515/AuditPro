@@ -38,6 +38,8 @@ Las cuentas Riesgos y Cumplimiento acceden a su registro y al catálogo común d
 
 Supervisión puede crear solicitudes de documentación con fecha límite en expedientes en campo o revisión. El auditor asignado responde con texto y referencias de evidencia; supervisión puede aceptar y cerrar, o devolver para corrección. Cada respuesta y devolución conserva su historial, y las transiciones se anotan en la bitácora del expediente. La gestión de solicitudes requiere permisos SELECT, INSERT y UPDATE en `evidence_requests` y SELECT e INSERT en `evidence_request_responses`. En instalaciones existentes ejecuta `private/upgrade-010.sql` con una cuenta de mantenimiento antes de publicar esta versión. Las solicitudes no sustituyen los adjuntos protegidos de las pruebas.
 
+La bandeja también muestra solicitudes de evidencia abiertas, vencidas o respondidas dentro del ámbito de supervisión y del auditor asignado, con enlace directo a la solicitud. Las respuestas pendientes de revisión se resaltan por estado sin notificaciones externas.
+
 ## Plantillas reutilizables de pruebas (upgrade-011)
 
 Supervisión crea y archiva plantillas de procedimientos desde **Plantillas de pruebas**. El auditor asignado puede agregar una prueba desde una plantilla activa durante el trabajo de campo. El título y procedimiento se copian al expediente; la relación de origen se conserva en `test_template_uses`, de modo que el historial no depende de cambios posteriores en el catálogo. La creación y el archivo quedan en `audit_log`. En instalaciones existentes, ejecuta `private/upgrade-011.sql` después de la migración 010, y otorga SELECT, INSERT y UPDATE en `test_templates` y SELECT e INSERT en `test_template_uses`. Para instalación limpia, el instalador ya ejecuta la migración 011.

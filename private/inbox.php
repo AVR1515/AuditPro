@@ -23,3 +23,23 @@ function inboxStatus(array $row, DateTimeImmutable $today): string {
     if ($due <= $today->modify('+7 days')) return 'Próxima a vencer';
     return 'En plazo';
 }
+
+/**
+ * Las solicitudes son visibles solo para supervisión y para el auditor
+ * asignado; los responsables de acciones no reciben información de campo.
+ */
+function evidenceRequestInbox(PDO $pdo, array $user): array {
+    if (!manage($user) && $user['role'] !== 'auditor') return [];
+    $sql = "SELECT r.id,r.audit_id,r.subject,r.due_on,r.status,d.title AS audit_title,
+            u.name AS assigned_auditor
+        FROM evidence_requests r
+        JOIN audits d ON d.id=r.audit_id
+        JOIN users u ON u.id=d.owner_id
+        WHERE r.status<>'cerrada' AND d.status IN ('en_campo','en_revision')";
+    $params = [];
+    if (!manage($user)) {
+        $sql .= ' AND d.owner_id=? AND r.status=\'abierta\'';
+        $params[] = $user['id'];
+    }
+    return query($pdo,$sql.' ORDER BY r.due_on,r.id',$params)->fetchAll();
+}

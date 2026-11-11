@@ -20,7 +20,7 @@ $requests = query($pdo,
         'SELECT h.*,u.name AS author FROM evidence_request_responses h JOIN users u ON u.id=h.author_id WHERE h.request_id=? ORDER BY h.id',
         [$request['id']])->fetchAll();
 ?>
-<article>
+<article id="request-<?= e($request['id']) ?>">
 <h3><?= e($request['subject']) ?></h3>
 <p class="muted">#<?= e($request['id']) ?> · <?= e($request['status']) ?> · Límite: <?= e($request['due_on']) ?> · Solicitó: <?= e($request['requester']) ?></p>
 <?php copyBlock('Documentación requerida',$request['description']); ?>

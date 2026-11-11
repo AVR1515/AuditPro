@@ -11,6 +11,23 @@ $reminders = unreadReminders($pdo,$user);
 · <?= $reminder['kind'] === 'vencida' ? 'Vencida' : 'Próxima a vencer' ?> · <?= e($reminder['due_date']) ?>
 <?php form('read_reminder',['reminder'=>$reminder['id']],true); ?><button>Marcar como leído</button></form></li><?php endforeach; ?>
 </ul></section><?php endif; ?>
+<?php if (manage($user) || $user['role'] === 'auditor'):
+$requestTasks = evidenceRequestInbox($pdo,$user);
+$requestOverdue = count(array_filter($requestTasks,static fn(array $request): bool => $request['status'] === 'abierta' && $request['due_on'] < $today->format('Y-m-d')));
+$requestToReview = count(array_filter($requestTasks,static fn(array $request): bool => $request['status'] === 'respondida'));
+?>
+<section><h2>Solicitudes de evidencia</h2>
+<dl class="metrics"><div><dt>Solicitudes pendientes</dt><dd><?= count($requestTasks) ?></dd></div>
+<div><dt>Vencidas sin respuesta</dt><dd><?= $requestOverdue ?></dd></div>
+<div><dt>Respuestas por revisar</dt><dd><?= $requestToReview ?></dd></div></dl>
+<?php if (!$requestTasks): ?><p class="muted">Sin solicitudes pendientes dentro de tu ámbito.</p><?php else: ?>
+<div class="table"><table><thead><tr><th scope="col">Solicitud</th><th scope="col">Auditoría</th><th scope="col">Auditor</th><th scope="col">Límite</th><th scope="col">Estado</th></tr></thead><tbody>
+<?php foreach ($requestTasks as $request): ?>
+<tr><td><a href="index.php?id=<?= e($request['audit_id']) ?>#request-<?= e($request['id']) ?>"><?= e($request['subject']) ?></a></td>
+<td><?= e($request['audit_title']) ?></td><td><?= e($request['assigned_auditor']) ?></td><td><?= e($request['due_on']) ?></td>
+<td><?= e($request['status'] === 'respondida' ? 'Respuesta por revisar' : ($request['due_on'] < $today->format('Y-m-d') ? 'Vencida' : 'Pendiente')) ?></td></tr>
+<?php endforeach; ?></tbody></table></div><?php endif; ?></section>
+<?php endif; ?>
 <section><h2>Seguimiento de acciones</h2>
 <dl class="metrics"><div><dt>Acciones abiertas</dt><dd><?= count($tasks) ?></dd></div><div><dt>Vencidas</dt><dd><?= $overdue ?></dd></div><div><dt>En verificación</dt><dd><?= $verification ?></dd></div></dl>
 <?php if (!$tasks): ?><p class="muted">Sin acciones pendientes en tu ámbito.</p><?php else: ?>
