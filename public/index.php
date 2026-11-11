@@ -89,7 +89,7 @@ try {
             $pdo->commit();
             redirect('index.php?view=policies');
         }
-        if (in_array($op,['retention_set','retention_purge'],true)) {
+        if (in_array($op,['retention_set','retention_request','retention_decide','retention_purge'],true)) {
             saveRetention($pdo,$user,$op);
             $pdo->commit();
             redirect('index.php?view=retention');
