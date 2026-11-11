@@ -39,7 +39,7 @@ try {
             foreach (explode(';', $schema) as $sql) {
                 if (trim($sql) !== '') $installer->exec($sql);
             }
-            foreach (['upgrade-002.sql','upgrade-003.sql','upgrade-004.sql','upgrade-005.sql','upgrade-006.sql','upgrade-007.sql','upgrade-008.sql','upgrade-009.sql','upgrade-010.sql','upgrade-011.sql','upgrade-012.sql','upgrade-013.sql','upgrade-014.sql','upgrade-015.sql','upgrade-016.sql','upgrade-017.sql','upgrade-018.sql','upgrade-019.sql','upgrade-020.sql','upgrade-021.sql','upgrade-022.sql','upgrade-023.sql'] as $file) {
+            foreach (['upgrade-002.sql','upgrade-003.sql','upgrade-004.sql','upgrade-005.sql','upgrade-006.sql','upgrade-007.sql','upgrade-008.sql','upgrade-009.sql','upgrade-010.sql','upgrade-011.sql','upgrade-012.sql','upgrade-013.sql','upgrade-014.sql','upgrade-015.sql','upgrade-016.sql','upgrade-017.sql','upgrade-018.sql','upgrade-019.sql','upgrade-020.sql','upgrade-021.sql','upgrade-022.sql','upgrade-023.sql','upgrade-024.sql'] as $file) {
                 $migration = file_get_contents(__DIR__ . '/../private/' . $file);
                 if ($migration === false) throw new RuntimeException('Falta un archivo del esquema.');
                 foreach (explode(';', $migration) as $sql) {
