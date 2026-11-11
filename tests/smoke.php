@@ -620,4 +620,10 @@ check($exec['overdue_evidence_requests']>=1 &&
  $exec['accepted_risks_due']>=1 &&
  $exec['exceptions_due']>=1,
  'Tablero ejecutivo integra solicitudes, cumplimiento y riesgos aceptados vencidos');
+// Las sesiones HTTP deben poder probar también los dos roles especializados.
+foreach (['riesgos','cumplimiento'] as $specialist) {
+    query($pdo,'INSERT INTO users(email,name,password_hash,role) VALUES (?,?,?,?)',
+        [$specialist.'@example.test',ucfirst($specialist),
+         password_hash('TestPass123456!',PASSWORD_DEFAULT),$specialist]);
+}
 echo "TODAS LAS PRUEBAS DE HUMO PASARON.\n";
