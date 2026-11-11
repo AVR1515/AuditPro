@@ -76,3 +76,18 @@ function breachedKriInbox(PDO $pdo): array {
         OR (k.direction='minimo' AND o.observed_value<k.threshold))
         ORDER BY o.observed_on DESC,k.id")->fetchAll();
 }
+
+/** KRI con lecturas antiguas o sin una medición dentro del intervalo definido. */
+function staleKriInbox(PDO $pdo, DateTimeImmutable $today): array {
+    return query($pdo,"SELECT k.id,k.risk_id,k.title,k.review_interval_days,k.created_at,
+        r.title AS risk_title,o.observed_on,o.observed_value
+        FROM grc_kri_indicators k
+        JOIN grc_risks r ON r.id=k.risk_id
+        LEFT JOIN grc_kri_observations o ON o.id=(
+            SELECT MAX(h.id) FROM grc_kri_observations h WHERE h.indicator_id=k.id
+        )
+        WHERE k.active=1 AND DATE_ADD(COALESCE(o.observed_on,DATE(k.created_at)),
+            INTERVAL k.review_interval_days DAY) < ?
+        ORDER BY COALESCE(o.observed_on,DATE(k.created_at)),k.id",
+        [$today->format('Y-m-d')])->fetchAll();
+}
