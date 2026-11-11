@@ -41,10 +41,16 @@ function kriObservations(PDO $pdo, int $indicatorId): array {
 
 function saveKri(PDO $pdo, array $user, string $op): void {
     if (!canRisk($user)) throw new DomainException('Solo Riesgos o Supervisión pueden gestionar revisiones e indicadores.');
+    // Supervisión limitada solo puede revisar riesgos y medir KRI en unidades concedidas.
+    // Crear/archivar indicadores sigue reservado al módulo GRC global.
+    if (restrictedSupervisor($user) && !in_array($op,['risk_review','kri_measure'],true))
+        throw new DomainException('La gestión global de indicadores está deshabilitada para este ámbito.');
     $actor=(int)$user['id'];
     $riskId=positiveId('risk_id');
     $risk=query($pdo,'SELECT * FROM grc_risks WHERE id=? FOR UPDATE',[$riskId])->fetch();
     if (!$risk) throw new DomainException('Riesgo no disponible.');
+    if (!allowedUnit($pdo,$user,(int)$risk['unit_id']))
+        throw new DomainException('Riesgo fuera de las unidades autorizadas.');
 
     if ($op==='risk_review') {
         $residual=positiveId('residual');
