@@ -4,7 +4,25 @@ $tasks = actionInbox($pdo,$user);
 $overdue = count(array_filter($tasks,fn(array $task): bool => inboxStatus($task,$today) === 'Vencida'));
 $verification = count(array_filter($tasks,fn(array $task): bool => $task['status'] === 'en_verificacion'));
 $reminders = unreadReminders($pdo,$user);
+$escalations = manage($user) ? unreadEscalations($pdo,$user) : [];
 ?>
+<?php if (manage($user)): $escalationSettings=escalationPolicy($pdo); ?>
+<section><h2>Escalamiento de acciones vencidas</h2>
+<p class="muted">Avisos internos a supervisores y administradores después del número configurado de días de retraso; se generan con el proceso diario local, sin correos ni servicios externos.</p>
+<p>Estado: <?= (int)$escalationSettings['enabled'] ? 'Activo' : 'Desactivado' ?> · Umbral: <?= e($escalationSettings['overdue_days']) ?> días.</p>
+<?php if ($user['role']==='admin'): ?>
+<details><summary>Configurar escalamiento</summary><?php form('save_escalation_policy'); ?>
+<label>Estado<select name="enabled"><option value="0" <?= !(int)$escalationSettings['enabled'] ? 'selected' : '' ?>>Desactivado</option>
+<option value="1" <?= (int)$escalationSettings['enabled'] ? 'selected' : '' ?>>Activado</option></select></label>
+<label>Días después del vencimiento<input type="number" name="overdue_days" min="1" max="90" value="<?= e($escalationSettings['overdue_days']) ?>" required></label>
+<button>Guardar política</button></form></details><?php endif; ?>
+<?php if ($escalations): ?><h3>Avisos pendientes</h3><ul>
+<?php foreach ($escalations as $notice): ?><li>
+<a href="index.php?id=<?= e($notice['audit_id']) ?>#action-<?= e($notice['action_id']) ?>"><?= e($notice['description']) ?></a>
+· Vence <?= e($notice['due_date']) ?> · Escalado tras <?= e($notice['overdue_days']) ?> días.
+<?php form('read_escalation',['escalation_id'=>$notice['id']],true); ?><button>Marcar como leído</button></form>
+</li><?php endforeach; ?></ul><?php else: ?><p class="muted">No hay avisos pendientes en tu bandeja.</p><?php endif; ?>
+</section><?php endif; ?>
 <?php if ($reminders): ?><section><h2>Recordatorios sin leer</h2><ul>
 <?php foreach ($reminders as $reminder): ?><li>
 <a href="index.php?id=<?= e($reminder['audit_id']) ?>#action-<?= e($reminder['action_id']) ?>"><?= e($reminder['description']) ?></a>
