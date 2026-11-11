@@ -5,6 +5,7 @@ $units = $riskAccess ? $pdo->query('SELECT id,name FROM auditable_units ORDER BY
 $risks = $riskAccess ? $pdo->query('SELECT r.*,u.name AS unit FROM grc_risks r JOIN auditable_units u ON u.id=r.unit_id ORDER BY r.review_on,r.id')->fetchAll() : [];
 $controls = $pdo->query('SELECT * FROM grc_controls ORDER BY title,id')->fetchAll();
 $obligations = $complianceAccess ? $pdo->query('SELECT * FROM grc_obligations ORDER BY review_on,id')->fetchAll() : [];
+$attestations = $complianceAccess ? obligationAttestations($pdo) : [];
 $eligibleTests = $manager ? $pdo->query("SELECT t.id,CONCAT(d.title,' / ',t.title) AS name FROM tests t JOIN audits d ON d.id=t.audit_id WHERE d.status IN ('en_campo','en_revision') ORDER BY d.title,t.id")->fetchAll() : [];
 $mappings = grcMappings($pdo,$user);
 ?>
@@ -25,7 +26,21 @@ $mappings = grcMappings($pdo,$user);
 <?php if ($complianceAccess): ?><section><h2>Obligaciones</h2>
 <p><a href="index.php?view=import">Importar obligaciones desde CSV</a></p>
 <?php foreach ($obligations as $obligation): ?><article><h3><?= e($obligation['title']) ?></h3>
-<p><?= e($obligation['framework']) ?> · <?= e($obligation['reference_code']) ?> · <?= e($obligation['owner_name']) ?> · Revisión <?= e($obligation['review_on']) ?></p></article><?php endforeach; ?>
+<p><?= e($obligation['framework']) ?> · <?= e($obligation['reference_code']) ?> · <?= e($obligation['owner_name']) ?> · Revisión <?= e($obligation['review_on']) ?></p>
+<?php $history = $attestations[$obligation['id']] ?? []; ?>
+<?php if ($history): ?><p><strong>Última atestación:</strong> <?= e(str_replace('_',' ',$history[0]['result'])) ?> · <?= e($history[0]['reviewed_on']) ?> · Próxima revisión <?= e($history[0]['next_review_on']) ?></p>
+<details><summary>Historial de atestaciones (<?= count($history) ?>)</summary>
+<?php foreach ($history as $entry): ?><p class="copy"><strong><?= e($entry['author_name']) ?> · <?= e($entry['reviewed_on']) ?> · <?= e($entry['result']) ?></strong>
+<?= e($entry['rationale']) ?> · Evidencia: <?= e($entry['evidence_reference']) ?> · Próxima: <?= e($entry['next_review_on']) ?></p><?php endforeach; ?>
+</details><?php endif; ?>
+<details><summary>Nueva atestación</summary><?php form('obligation_attest',['obligation_id'=>$obligation['id']]); ?>
+<label>Conclusión<select name="result"><option value="cumple">Cumple</option><option value="parcial">Cumple parcialmente</option><option value="no_cumple">No cumple</option><option value="no_aplica">No aplica</option></select></label>
+<label>Referencia de evidencia<textarea name="evidence" maxlength="12000" required></textarea></label>
+<label>Fundamento y excepciones<textarea name="rationale" maxlength="12000" required></textarea></label>
+<label>Fecha evaluada<input type="date" name="reviewed" max="<?= e(date('Y-m-d')) ?>" value="<?= e(date('Y-m-d')) ?>" required></label>
+<label>Próxima revisión<input type="date" name="next_review" min="<?= e(date('Y-m-d',strtotime('+1 day'))) ?>" required></label>
+<button>Registrar atestación</button></form></details>
+</article><?php endforeach; ?>
 <details><summary>Registrar obligación</summary><?php form('grc_obligation'); ?>
 <label>Marco<input name="framework" maxlength="180" required></label><label>Referencia<input name="reference" maxlength="120" required></label>
 <label>Título<input name="title" maxlength="180" required></label><label>Responsable<input name="owner_name" maxlength="180" required></label>
