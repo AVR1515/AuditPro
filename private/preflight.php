@@ -27,6 +27,9 @@ function preflightChecks(PDO $pdo, array $config): array {
         'obligation_exceptions'=>['id'],
         'action_risk_acceptances'=>['id'],
         'audit_log'=>['id'],
+        'compliance_policies'=>['id','title','owner_name'],
+        'compliance_policy_versions'=>['id','policy_id','version_number','approved_by'],
+        'compliance_policy_obligations'=>['version_id','obligation_id'],
     ];
     $schema=(string)$pdo->query('SELECT DATABASE()')->fetchColumn();
     if ($schema==='') throw new RuntimeException('No se ha seleccionado una base de datos.');
