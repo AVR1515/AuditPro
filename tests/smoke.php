@@ -12,6 +12,7 @@ require __DIR__ . '/../private/risk-acceptance.php';
 require __DIR__ . '/../private/grc.php';
 require __DIR__ . '/../private/attestations.php';
 require __DIR__ . '/../private/exceptions.php';
+require __DIR__ . '/../private/multiyear.php';
 
 function check(bool $ok, string $message): void {
     if (!$ok) throw new RuntimeException('FALLÓ: ' . $message);
@@ -37,7 +38,7 @@ if ($pdo->query('SELECT DATABASE()')->fetchColumn() !== 'auditpro_test') {
 }
 foreach (array_merge(['schema.sql'],array_map(
     static fn(int $number): string => sprintf('upgrade-%03d.sql',$number),
-    range(2,15)
+    range(2,16)
 )) as $migration) {
     $contents = file_get_contents(__DIR__.'/../private/'.$migration);
     if ($contents === false) throw new RuntimeException('Falta '.$migration);
@@ -45,7 +46,7 @@ foreach (array_merge(['schema.sql'],array_map(
         if (trim($sql) !== '') $pdo->exec($sql);
     }
 }
-echo "Migraciones 002–015 y esquema instalados.\n";
+echo "Migraciones 002–016 y esquema instalados.\n";
 foreach (['admin','supervisor','auditor','responsable'] as $role) {
     query($pdo,'INSERT INTO users(email,name,password_hash,role) VALUES (?,?,?,?)',
         [$role.'@example.test',ucfirst($role),password_hash('TestPass123456!',PASSWORD_DEFAULT),$role]);
@@ -169,4 +170,33 @@ $_POST=['obligation_id'=>(string)$obligationId,'exception_id'=>(string)$exceptio
 saveComplianceException($pdo,$admin,'exception_close');
 check(query($pdo,'SELECT status FROM obligation_exceptions WHERE id=?',[$exceptionId])->fetchColumn()==='cerrada',
  'Excepción cerrada conservando historial');
+
+// Horizonte multianual: riesgo congelado, segregación de funciones y carga estimada.
+$_POST=['title'=>'Horizonte 2027–2029','start_year'=>'2027','end_year'=>'2029',
+ 'rationale'=>'Priorizar unidades con mayor exposición'];
+deny(static fn()=>saveMultiyear($pdo,$auditor,'multiyear_create'),
+ 'Auditor no puede crear horizonte multianual');
+saveMultiyear($pdo,$supervisor,'multiyear_create');
+$multiId=(int)query($pdo,'SELECT id FROM multiyear_plans ORDER BY id DESC LIMIT 1')->fetchColumn();
+check($multiId>0,'Horizonte multianual creado');
+$_POST=['plan_id'=>(string)$multiId,'unit_id'=>(string)$unit,
+ 'auditor_id'=>'3','target_year'=>'2027','hours'=>'180'];
+saveMultiyear($pdo,$supervisor,'multiyear_add');
+deny(static fn()=>saveMultiyear($pdo,$supervisor,'multiyear_add'),
+ 'No permite duplicar la misma unidad y año');
+$multiItems=multiyearItems($pdo);
+check(count($multiItems[$multiId]??[])===1 && (int)$multiItems[$multiId][0]['risk_score']===16,
+ 'Congela evaluación de riesgo al programar');
+$multiLoad=multiyearLoad($pdo,$multiId);
+check((int)$multiLoad['3:2027']['planned_minutes']===10800,'Carga estimada por auditor y año');
+$_POST=['plan_id'=>(string)$multiId];
+deny(static fn()=>saveMultiyear($pdo,$supervisor,'multiyear_approve'),
+ 'Prohíbe aprobar el propio plan multianual');
+saveMultiyear($pdo,$admin,'multiyear_approve');
+check((bool)query($pdo,'SELECT approved_by FROM multiyear_plans WHERE id=?',[$multiId])->fetchColumn(),
+ 'Aprueba mediante revisor independiente');
+$_POST=['plan_id'=>(string)$multiId,'unit_id'=>(string)$unit,'auditor_id'=>'3',
+ 'target_year'=>'2028','hours'=>'100'];
+deny(static fn()=>saveMultiyear($pdo,$supervisor,'multiyear_add'),
+ 'Plan aprobado es inmutable');
 echo "TODAS LAS PRUEBAS DE HUMO PASARON.\n";
