@@ -8,7 +8,7 @@ Este documento no certifica el despliegue ni reemplaza la aprobación del equipo
 - [ ] Resguardar una copia coherente de la base y verificar una restauración en un entorno independiente.
 - [ ] Confirmar `https://` y que `/private/`, archivos SQL, Git y la configuración privada no son accesibles por navegador.
 - [ ] Confirmar permisos SQL mínimos, usuarios únicos y política de contraseñas.
-- [ ] Verificar los resultados de pruebas HTTP, de MySQL y sintaxis del commit instalado.
+- [ ] Verificar los resultados de pruebas HTTP, de MySQL, sintaxis, restauración aislada y CLI de avisos del SHA instalado.
 - [ ] Registrar aprobación del responsable para el plazo de retención y cualquier eliminación irreversible.
 - [ ] Verificar solicitud y decisión de purgado por cuentas administradoras distintas; una autorización caducada o cancelada no sirve.
 - [ ] Ejecutar `php private/remind.php --dry-run`, comprobar el resumen y luego verificar la programación y bitácora real de `private/remind.php`.
@@ -55,6 +55,7 @@ Este documento no certifica el despliegue ni reemplaza la aprobación del equipo
 - [ ] Los usuarios autorizados registran en **Evidencias del piloto** el resultado, la referencia al acta y el SHA completo de lo probado.
 - [ ] Un rol especializado no puede registrar una declaración reservada a otro rol.
 - [ ] Administración coteja el historial inmutable con actas, firmas y el entorno ensayado; una declaración por sí sola no habilita producción.
+- [ ] Administración consulta «Preparación del lanzamiento» con el SHA instalado y confirma que una declaración «no cumple» posterior y los registros de versiones anteriores no se consideren aprobaciones actuales.
 
 ## Aceptación del piloto
 
