@@ -28,6 +28,7 @@ function preflightChecks(PDO $pdo, array $config): array {
         'action_risk_acceptances'=>['id'],
         'action_risk_reviews'=>['id','acceptance_id','reviewed_by'],
         'audit_log'=>['id'],
+        'scheduled_job_runs'=>['job_key','last_success_at','successful_runs'],
         'audits'=>['closed_on'],
         'evidence_request_attachments'=>['response_id','attachment_id'],
         'compliance_policies'=>['id','title','owner_name'],
