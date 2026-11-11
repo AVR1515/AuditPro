@@ -46,6 +46,11 @@ if grep -q 'Preparación para el piloto y producción' "$tmp/blocked-readiness.h
   echo 'ERROR: acceso de auditor al diagnóstico de lanzamiento' >&2
   exit 1
 fi
+curl --fail --silent --show-error -b "$cookies" "$BASE_URL/index.php?view=pilot-signoffs" > "$tmp/auditor-signoffs.html"
+if grep -q 'Evidencias de aceptación del piloto' "$tmp/auditor-signoffs.html"; then
+  echo 'ERROR: acceso de auditor al registro de declaraciones' >&2
+  exit 1
+fi
 
 # Sesión independiente de un supervisor limitado a una unidad.
 supervisorCookies="$tmp/supervisor-cookies.txt"
@@ -124,6 +129,10 @@ for specialist in riesgos cumplimiento; do
   curl --fail --silent --show-error -b "$specialistCookies" \
     "$BASE_URL/index.php?view=grc" > "$tmp/$specialist-grc.html"
   grep -q 'Riesgos y cumplimiento' "$tmp/$specialist-grc.html"
+  curl --fail --silent --show-error -b "$specialistCookies" \
+    "$BASE_URL/index.php?view=pilot-signoffs" > "$tmp/$specialist-signoffs.html"
+  grep -q 'Evidencias de aceptación del piloto' "$tmp/$specialist-signoffs.html"
+
   curl --fail --silent --show-error -b "$specialistCookies" \
     "$BASE_URL/index.php?view=unit-access" > "$tmp/$specialist-unit-access.html"
   if grep -q 'Permisos por unidad auditable' "$tmp/$specialist-unit-access.html"; then
