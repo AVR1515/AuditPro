@@ -39,3 +39,23 @@ function reminderCandidates(PDO $pdo, DateTimeImmutable $today): array {
       [$today->format('Y-m-d'),$today->format('Y-m-d'),
        $today->modify('+7 days')->format('Y-m-d')])->fetch();
 }
+
+/** Marca la ejecución solo después de procesar todos los avisos con éxito. */
+function recordReminderRun(PDO $pdo, DateTimeImmutable $when): void {
+    query($pdo,"INSERT INTO scheduled_job_runs(job_key,last_success_at,successful_runs)
+        VALUES ('reminders',?,1)
+        ON DUPLICATE KEY UPDATE last_success_at=VALUES(last_success_at),
+        successful_runs=successful_runs+1",[$when->format('Y-m-d H:i:s')]);
+}
+/** Un cron diario debería tener al menos una ejecución correcta cada 36 horas. */
+function reminderJobHealth(PDO $pdo, DateTimeImmutable $now): array {
+    $row=query($pdo,"SELECT last_success_at,successful_runs FROM scheduled_job_runs
+        WHERE job_key='reminders'")->fetch();
+    if (!$row) return ['healthy'=>false,'last_success_at'=>null,'successful_runs'=>0];
+    $last=new DateTimeImmutable($row['last_success_at']);
+    return [
+        'healthy'=>$last<=$now && $last->modify('+36 hours') >= $now,
+        'last_success_at'=>$row['last_success_at'],
+        'successful_runs'=>(int)$row['successful_runs'],
+    ];
+}
