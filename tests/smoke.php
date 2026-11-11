@@ -50,7 +50,7 @@ if ($pdo->query('SELECT DATABASE()')->fetchColumn() !== 'auditpro_test') {
 }
 foreach (array_merge(['schema.sql'],array_map(
     static fn(int $number): string => sprintf('upgrade-%03d.sql',$number),
-    range(2,26)
+    range(2,27)
 )) as $migration) {
     $contents = file_get_contents(__DIR__.'/../private/'.$migration);
     if ($contents === false) throw new RuntimeException('Falta '.$migration);
@@ -58,7 +58,7 @@ foreach (array_merge(['schema.sql'],array_map(
         if (trim($sql) !== '') $pdo->exec($sql);
     }
 }
-echo "Migraciones 002–026 y esquema instalados.\n";
+echo "Migraciones 002–027 y esquema instalados.\n";
 foreach (['admin','supervisor','auditor','responsable'] as $role) {
     query($pdo,'INSERT INTO users(email,name,password_hash,role) VALUES (?,?,?,?)',
         [$role.'@example.test',ucfirst($role),password_hash('TestPass123456!',PASSWORD_DEFAULT),$role]);
@@ -317,6 +317,16 @@ $today=new DateTimeImmutable('today');
 $candidatePreview=reminderCandidates($pdo,new DateTimeImmutable('today'));
 check(array_key_exists('overdue',$candidatePreview) && array_key_exists('approaching',$candidatePreview),
  'Previsualización de recordatorios no requiere crear notificaciones');
+check(reminderJobHealth($pdo,new DateTimeImmutable())['healthy']===false,
+ 'Instalación sin cron no informa ejecución ficticia');
+recordReminderRun($pdo,new DateTimeImmutable('-40 hours'));
+check(reminderJobHealth($pdo,new DateTimeImmutable())['healthy']===false,
+ 'Último éxito fuera de 36 horas informa tarea vencida');
+recordReminderRun($pdo,new DateTimeImmutable());
+$health=reminderJobHealth($pdo,new DateTimeImmutable());
+check($health['healthy']===true && $health['successful_runs']===2,
+ 'Tarea diaria marca salud tras dos ejecuciones verificables');
+
 check((int)escalationPolicy($pdo)['enabled']===0,'Escalamiento comienza desactivado');
 $_POST=['enabled'=>'1','overdue_days'=>'3'];
 deny(static fn()=>saveEscalationPolicy($pdo,$supervisor),
