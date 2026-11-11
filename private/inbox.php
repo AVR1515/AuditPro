@@ -10,6 +10,9 @@ function actionInbox(PDO $pdo, array $user): array {
     if ($user['role'] === 'responsable') {
         $sql .= ' AND a.owner_id=?';
         $params[] = $user['id'];
+    } elseif (restrictedSupervisor($user)) {
+        $sql .= ' AND EXISTS (SELECT 1 FROM audit_assessment_links l JOIN risk_assessments r ON r.id=l.assessment_id JOIN supervisor_unit_grants g ON g.unit_id=r.unit_id WHERE l.audit_id=d.id AND g.user_id=?)';
+        $params[]=$user['id'];
     } elseif (!manage($user)) {
         $sql .= ' AND d.owner_id=?';
         $params[] = $user['id'];
