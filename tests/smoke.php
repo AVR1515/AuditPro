@@ -320,6 +320,9 @@ saveUnitGrant($pdo,$admin,'unit_grant');
 check(allowedUnit($pdo,$restrictedUser,$unit),'Grant autoriza unidad específica');
 check(count(scopedUnitOverview($pdo,$restrictedUser))===1,
  'Supervisor restringido solo recibe las unidades concedidas');
+$coverageAllowed=scopedUnitCoverage($pdo,$restrictedUser);
+check(count($coverageAllowed)===1 && (int)$coverageAllowed[0]['audit_count']===1,
+ 'Cobertura por unidad no duplica auditorías de otras unidades');
 check(count(scopedRiskOverview($pdo,$restrictedUser))===1,
  'Riesgos filtrados por unidad asignada');
 check((int)accessible($pdo,$restrictedUser,$auditId)['id']===$auditId,'Supervisor ve expediente vinculado a su unidad');
@@ -337,6 +340,9 @@ query($pdo,'INSERT INTO audit_assessment_links(audit_id,assessment_id) VALUES (?
 deny(static fn()=>accessible($pdo,$restrictedUser,$otherAudit),'Supervisor no ve otra unidad');
 query($pdo,"INSERT INTO grc_risks(unit_id,title,owner_name,inherent,residual,appetite,treatment,review_on) VALUES (?,'Riesgo B','Área B',12,10,8,'Control',?)",[$otherUnit,date('Y-m-d',strtotime('+10 days'))]);
 check(count(scopedRiskOverview($pdo,$restrictedUser))===1,'No expone riesgos de otras unidades');
+check(count(scopedUnitCoverage($pdo,$restrictedUser))===1,
+ 'Cobertura excluye unidades no autorizadas');
+
 $authorizedRisk=(int)query($pdo,'SELECT id FROM grc_risks WHERE unit_id=? ORDER BY id DESC LIMIT 1',[$unit])->fetchColumn();
 $foreignRisk=(int)query($pdo,'SELECT id FROM grc_risks WHERE unit_id=? ORDER BY id DESC LIMIT 1',[$otherUnit])->fetchColumn();
 $_POST=['risk_id'=>(string)$foreignRisk,'residual'=>'4','reviewed_on'=>date('Y-m-d'),
