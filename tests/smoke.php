@@ -688,6 +688,15 @@ check(count(pilotGateHistory($pdo,$pilotRisk))===2,
  'Especialista consulta únicamente las declaraciones de su propia cuenta');
 check(count(pilotGateHistory($pdo,$admin))>=2,
  'Administración puede revisar los registros declarativos');
+$gateCoverage=pilotGateCoverage($pdo,$testedSha);
+check($gateCoverage['required']===10 && $gateCoverage['conforming']===0,
+ 'La última declaración no conforme prevalece para el SHA exacto');
+check(count($gateCoverage['pending'])===10,
+ 'Declaraciones ausentes no se consideran verificaciones aprobadas');
+$otherSha=str_repeat('b',40);
+check(pilotGateCoverage($pdo,$otherSha)['conforming']===0,
+ 'Las evidencias de una versión no aprueban una versión distinta');
+
 $_POST['version_sha']='sha-corto';
 deny(static fn()=>savePilotGateSignoff($pdo,$pilotRisk),
  'La declaración exige versión SHA de 40 caracteres');
