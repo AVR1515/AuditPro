@@ -8,6 +8,7 @@ foreach ($pdo->query("SELECT * FROM annual_plan_items ORDER BY FIELD(risk,'criti
 }
 ?>
 <?php require __DIR__ . '/capacity-view.php'; ?>
+<?php require __DIR__ . '/multiyear-view.php'; ?>
 <section><h2>Crear versión del plan anual</h2>
 <p>La versión conserva los expedientes del año y sus datos al momento de crearla. Otra cuenta de supervisión debe aprobarla.</p>
 <?php form('snapshot_plan'); ?>
