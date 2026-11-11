@@ -26,6 +26,7 @@ function preflightChecks(PDO $pdo, array $config): array {
         'grc_kri_indicators'=>['id','review_interval_days'],
         'obligation_exceptions'=>['id'],
         'action_risk_acceptances'=>['id'],
+        'action_risk_reviews'=>['id','acceptance_id','reviewed_by'],
         'audit_log'=>['id'],
         'audits'=>['closed_on'],
         'evidence_request_attachments'=>['response_id','attachment_id'],
