@@ -50,7 +50,7 @@ if ($pdo->query('SELECT DATABASE()')->fetchColumn() !== 'auditpro_test') {
 }
 foreach (array_merge(['schema.sql'],array_map(
     static fn(int $number): string => sprintf('upgrade-%03d.sql',$number),
-    range(2,22)
+    range(2,23)
 )) as $migration) {
     $contents = file_get_contents(__DIR__.'/../private/'.$migration);
     if ($contents === false) throw new RuntimeException('Falta '.$migration);
@@ -58,7 +58,7 @@ foreach (array_merge(['schema.sql'],array_map(
         if (trim($sql) !== '') $pdo->exec($sql);
     }
 }
-echo "Migraciones 002–022 y esquema instalados.\n";
+echo "Migraciones 002–023 y esquema instalados.\n";
 foreach (['admin','supervisor','auditor','responsable'] as $role) {
     query($pdo,'INSERT INTO users(email,name,password_hash,role) VALUES (?,?,?,?)',
         [$role.'@example.test',ucfirst($role),password_hash('TestPass123456!',PASSWORD_DEFAULT),$role]);
@@ -86,14 +86,24 @@ saveTemplate($pdo,$admin,'template_archive');
 check((int)query($pdo,'SELECT active FROM test_templates WHERE id=?',[$templateId])->fetchColumn()===0,'Archivar sin borrar plantilla');
 check((bool)query($pdo,'SELECT id FROM tests WHERE id=?',[$test['id']])->fetchColumn(),'La prueba original persiste');
 
+query($pdo,"INSERT INTO attachments(test_id,uploaded_by,filename,mime,bytes,sha256,content)
+ VALUES (? ,3,'acta.txt','text/plain',4,?,?)",[$test['id'],hash('sha256','ACTA'),'ACTA']);
+$requestAttachmentId=(int)$pdo->lastInsertId();
 $_POST=['audit_id'=>(string)$auditId,'subject'=>'Actas','description'=>'Adjuntar actas de conciliación','due'=>date('Y-m-d',strtotime('+5 days'))];
 saveEvidenceRequest($pdo,$supervisor,'request_create');
 $requestId=(int)query($pdo,'SELECT id FROM evidence_requests WHERE audit_id=? ORDER BY id DESC LIMIT 1',[$auditId])->fetchColumn();
 check($requestId>0,'Supervisión crea solicitud');
-$_POST=['audit_id'=>(string)$auditId,'request_id'=>(string)$requestId,'answer'=>'Ver expediente de respaldo'];
+$_POST=['audit_id'=>(string)$auditId,'request_id'=>(string)$requestId,'answer'=>'Ver expediente de respaldo','attachment_id'=>(string)$requestAttachmentId];
+$wrongAttachment=$_POST;
+$_POST['attachment_id']='999999';
+deny(static fn()=>saveEvidenceRequest($pdo,$auditor,'request_answer'),'Rechaza evidencia que no pertenece al expediente');
+$_POST=$wrongAttachment;
 deny(static fn()=>saveEvidenceRequest($pdo,$responsable,'request_answer'),'Responsable no puede responder solicitud');
 saveEvidenceRequest($pdo,$auditor,'request_answer');
 check(query($pdo,'SELECT status FROM evidence_requests WHERE id=?',[$requestId])->fetchColumn()==='respondida','Auditor responde solicitud');
+check((int)query($pdo,'SELECT l.attachment_id FROM evidence_request_attachments l
+ JOIN evidence_request_responses h ON h.id=l.response_id WHERE h.request_id=?',[$requestId])->fetchColumn()===$requestAttachmentId,
+ 'Solicitud conserva referencia verificable a evidencia del expediente');
 query($pdo,"UPDATE audits SET status='en_revision' WHERE id=?",[$auditId]);
 $audit=query($pdo,'SELECT * FROM audits WHERE id=?',[$auditId])->fetch();
 check(nextState($pdo,$audit)===null,'Solicitud abierta bloquea emisión de informe');
