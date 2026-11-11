@@ -70,3 +70,8 @@ function coverageStatus(array $row, int $year): string {
     return $year-(int)$row['last_audit_year'] >= $cycleYears ?
         'Revisión de cobertura requerida (estimación)' : 'Dentro del ciclo aproximado (sin cierre fechado)';
 }
+
+/** Estado evaluado sin comparar etiquetas de presentación. */
+function coverageNeedsReview(array $row,int $year): bool {
+    return !str_starts_with(coverageStatus($row,$year),'Dentro del ciclo');
+}
