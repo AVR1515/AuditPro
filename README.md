@@ -108,6 +108,10 @@ Ejecuta `php private/preflight-cli.php` desde el servidor configurado con `AUDIT
 
 El módulo **Políticas** permite a Cumplimiento y Supervisión crear políticas, generar versiones textuales y vincular obligaciones. Una versión pendiente puede modificarse solo mediante sus vínculos; el texto se conserva como instantánea. No puede abrirse otra versión mientras exista una pendiente. La aprobación exige una cuenta distinta y al menos una obligación vinculada. Las versiones aprobadas no pueden modificarse. El historial identifica autor y aprobador. Ejecuta `private/upgrade-021.sql` después de 020, y concede SELECT e INSERT en `compliance_policies`, SELECT e INSERT y UPDATE en `compliance_policy_versions`, SELECT e INSERT en `compliance_policy_obligations`. La funcionalidad no reemplaza una aprobación legal de las políticas internas.
 
+## Consulta de riesgos para supervisores por unidad
+
+Los supervisores con alcance restringido disponen de **Mis unidades y riesgos**, una vista de solo lectura que muestra exclusivamente unidades concedidas y sus riesgos residuales/apetito. Continúan bloqueados los paneles de obligaciones, controles, políticas, planificación general y retención que no admiten aún un filtro equivalente. También queda bloqueado el catálogo global de plantillas para estos supervisores. La prueba de integración verifica que un riesgo de otra unidad no se filtre accidentalmente.
+
 ## Pruebas HTTP de acceso (integración continua)
 
 Además de las pruebas de integración con MySQL, GitHub Actions inicia un servidor PHP temporal con una base `auditpro_test` y verifica la pantalla de inicio de sesión, el login de un auditor, la denegación de vistas administrativas, la protección CSRF y la imposibilidad de descargar SQL privados desde la raíz pública. El entorno de prueba utiliza exclusivamente datos ficticios y se destruye al finalizar. Esto no reemplaza la revisión de accesibilidad ni un piloto en el servidor de cliente.
