@@ -1,0 +1,23 @@
+CREATE TABLE IF NOT EXISTS escalation_policy (
+ id TINYINT UNSIGNED NOT NULL PRIMARY KEY,
+ enabled BOOLEAN NOT NULL DEFAULT FALSE,
+ overdue_days SMALLINT UNSIGNED NOT NULL DEFAULT 14,
+ updated_by BIGINT UNSIGNED NULL,
+ updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+ FOREIGN KEY(updated_by) REFERENCES users(id)
+) ENGINE=InnoDB;
+INSERT INTO escalation_policy(id,enabled,overdue_days) VALUES(1,FALSE,14)
+ON DUPLICATE KEY UPDATE id=id;
+CREATE TABLE IF NOT EXISTS action_escalations (
+ id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+ action_id BIGINT UNSIGNED NOT NULL,
+ recipient_id BIGINT UNSIGNED NOT NULL,
+ due_date DATE NOT NULL,
+ overdue_days SMALLINT UNSIGNED NOT NULL,
+ created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+ read_at TIMESTAMP NULL DEFAULT NULL,
+ UNIQUE KEY uq_escalation_once(action_id,recipient_id,due_date,overdue_days),
+ INDEX idx_escalation_unread (recipient_id,read_at),
+ FOREIGN KEY(action_id) REFERENCES actions(id),
+ FOREIGN KEY(recipient_id) REFERENCES users(id)
+) ENGINE=InnoDB;
