@@ -15,6 +15,7 @@ function manage(array $user): bool {
 function accessible(PDO $pdo, array $user, int $id, bool $lock = false): array {
     $audit = query($pdo, 'SELECT * FROM audits WHERE id=?' . ($lock ? ' FOR UPDATE' : ''), [$id])->fetch();
     if (!$audit) throw new DomainException('Expediente no disponible.');
+    if (manage($user) && !allowedAudit($pdo,$user,$id)) throw new DomainException('Expediente fuera de tu ámbito.');
     if (manage($user) || ($user['role'] === 'auditor' && (int) $audit['owner_id'] === (int) $user['id'])) return $audit;
     if ($user['role'] === 'responsable' && in_array($audit['status'],['emitida','cerrada'],true) && query($pdo, 'SELECT 1 FROM actions a JOIN findings f ON f.id=a.finding_id JOIN tests t ON t.id=f.test_id WHERE t.audit_id=? AND a.owner_id=? LIMIT 1', [$id,$user['id']])->fetchColumn()) return $audit;
     throw new DomainException('Expediente no disponible.');
@@ -50,7 +51,10 @@ function mutate(PDO $pdo, array $user, string $op): ?int {
         if (isset($_POST['assessment']) && $_POST['assessment'] !== '') {
             $assessment = query($pdo,'SELECT r.id,r.rating,u.name FROM risk_assessments r JOIN auditable_units u ON u.id=r.unit_id WHERE r.id=?',[positiveId('assessment')])->fetch();
             if (!$assessment) throw new DomainException('La evaluación seleccionada no existe.');
+            $unitId=(int)query($pdo,'SELECT unit_id FROM risk_assessments WHERE id=?',[$assessment['id']])->fetchColumn();
+            if (!allowedUnit($pdo,$user,$unitId)) throw new DomainException('Unidad fuera de tu ámbito.');
         }
+        if (restrictedSupervisor($user) && !$assessment) throw new DomainException('Selecciona una evaluación autorizada.');
         query($pdo,'INSERT INTO audits(title,entity,objective,year,risk,owner_id) VALUES (?,?,?,?,?,?)',
             [field('title'),$assessment['name'] ?? field('entity'),field('objective',12000),$year,$assessment['rating'] ?? choice('risk',LEVELS),$owner]);
         $id = (int) $pdo->lastInsertId();
