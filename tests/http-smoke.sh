@@ -100,6 +100,31 @@ if grep -q 'Políticas internas y versiones' "$tmp/supervisor-policies.html"; th
   exit 1
 fi
 
+# Roles especializados: acceso a GRC sin facultades administrativas globales.
+for specialist in riesgos cumplimiento; do
+  specialistCookies="$tmp/$specialist-cookies.txt"
+  curl --fail --silent --show-error -c "$specialistCookies" \
+    "$BASE_URL/index.php" > "$tmp/$specialist-login.html"
+  specialistCsrf="$(grep -o 'name="csrf" value="[^"]*"' \
+    "$tmp/$specialist-login.html" | head -n1 | cut -d '"' -f 4)"
+  test -n "$specialistCsrf"
+  curl --silent --show-error -b "$specialistCookies" -c "$specialistCookies" \
+    -D "$tmp/$specialist-headers.txt" -o "$tmp/$specialist-post.html" \
+    --data-urlencode "csrf=$specialistCsrf" --data-urlencode 'op=login' \
+    --data-urlencode "email=$specialist@example.test" \
+    --data-urlencode 'password=TestPass123456!' "$BASE_URL/index.php"
+  grep -Eq '^HTTP/1\.[01] 303|^HTTP/1\.[01] 302' "$tmp/$specialist-headers.txt"
+  curl --fail --silent --show-error -b "$specialistCookies" \
+    "$BASE_URL/index.php?view=grc" > "$tmp/$specialist-grc.html"
+  grep -q 'Riesgos y cumplimiento' "$tmp/$specialist-grc.html"
+  curl --fail --silent --show-error -b "$specialistCookies" \
+    "$BASE_URL/index.php?view=unit-access" > "$tmp/$specialist-unit-access.html"
+  if grep -q 'Permisos por unidad auditable' "$tmp/$specialist-unit-access.html"; then
+    echo "ERROR: $specialist accedió a permisos administrativos" >&2
+    exit 1
+  fi
+done
+
 # Un formulario sin CSRF válido no debe ejecutar mutaciones.
 curl --fail --silent --show-error -b "$cookies" \
   --data-urlencode 'csrf=no-es-valido' --data-urlencode 'op=password' \
