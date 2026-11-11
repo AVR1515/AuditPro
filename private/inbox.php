@@ -54,3 +54,19 @@ function riskAcceptanceDue(PDO $pdo, DateTimeImmutable $today): array {
         WHERE r.status='aceptada' AND r.review_on<=?
         ORDER BY r.review_on,r.id",[$today->modify('+30 days')->format('Y-m-d')])->fetchAll();
 }
+
+/** Indicadores que exceden su umbral usando la última medición disponible. */
+function breachedKriInbox(PDO $pdo): array {
+    return query($pdo,"SELECT k.id,k.title,k.unit,k.direction,k.threshold,
+        r.id AS risk_id,r.title AS risk_title,
+        o.observed_value,o.observed_on
+        FROM grc_kri_indicators k
+        JOIN grc_risks r ON r.id=k.risk_id
+        JOIN grc_kri_observations o ON o.id=(
+            SELECT MAX(h.id) FROM grc_kri_observations h WHERE h.indicator_id=k.id
+        )
+        WHERE k.active=1 AND
+        ((k.direction='maximo' AND o.observed_value>k.threshold)
+        OR (k.direction='minimo' AND o.observed_value<k.threshold))
+        ORDER BY o.observed_on DESC,k.id")->fetchAll();
+}
