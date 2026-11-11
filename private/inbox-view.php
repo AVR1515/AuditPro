@@ -36,6 +36,14 @@ $requestToReview = count(array_filter($requestTasks,static fn(array $request): b
 <td><?= e($task['name']) ?></td><td><?= e($task['due_date']) ?></td><td><?= e(str_replace('_',' ',$task['status'])) ?></td><td><?= e(inboxStatus($task,$today)) ?></td></tr><?php endforeach; ?>
 </tbody></table></div><?php endif; ?></section>
 <?php if (manage($user)): ?>
+<section><h2>Revisión de riesgos aceptados</h2>
+<?php $acceptedDue = riskAcceptanceDue($pdo,$today); ?>
+<p class="muted">Incluye riesgos aceptados vencidos o próximos a revisión en 30 días, incluso si la auditoría está cerrada.</p>
+<?php if (!$acceptedDue): ?><p class="muted">Sin aceptaciones que revisar en los próximos 30 días.</p><?php else: ?>
+<ul><?php foreach ($acceptedDue as $accepted): ?>
+<li><a href="index.php?id=<?= e($accepted['audit_id']) ?>#acceptance-<?= e($accepted['id']) ?>"><?= e($accepted['description']) ?></a>
+· <?= e($accepted['audit_title']) ?> · <?= e($accepted['review_on']) ?> · <?= $accepted['review_on'] < $today->format('Y-m-d') ? 'Vencida' : 'Próxima revisión' ?></li>
+<?php endforeach; ?></ul><?php endif; ?></section>
 <section><h2>Revisiones de riesgo y cumplimiento</h2>
 <?php $reviews = query($pdo,"SELECT title,review_on,'Riesgo' AS kind FROM grc_risks WHERE review_on<=?
     UNION ALL SELECT title,review_on,'Obligación' AS kind FROM grc_obligations WHERE review_on<=? ORDER BY review_on,title",
