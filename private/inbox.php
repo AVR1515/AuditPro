@@ -43,3 +43,14 @@ function evidenceRequestInbox(PDO $pdo, array $user): array {
     }
     return query($pdo,$sql.' ORDER BY r.due_on,r.id',$params)->fetchAll();
 }
+
+/** Aceptaciones vigentes que necesitan revisión, incluso en auditorías cerradas. */
+function riskAcceptanceDue(PDO $pdo, DateTimeImmutable $today): array {
+    return query($pdo,"SELECT r.id,r.review_on,a.description,t.audit_id,d.title AS audit_title
+        FROM action_risk_acceptances r
+        JOIN actions a ON a.id=r.action_id
+        JOIN findings f ON f.id=a.finding_id JOIN tests t ON t.id=f.test_id
+        JOIN audits d ON d.id=t.audit_id
+        WHERE r.status='aceptada' AND r.review_on<=?
+        ORDER BY r.review_on,r.id",[$today->modify('+30 days')->format('Y-m-d')])->fetchAll();
+}
