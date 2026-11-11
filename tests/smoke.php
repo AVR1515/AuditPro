@@ -9,6 +9,8 @@ require __DIR__ . '/../private/templates.php';
 require __DIR__ . '/../private/capacity.php';
 require __DIR__ . '/../private/universe.php';
 require __DIR__ . '/../private/risk-acceptance.php';
+require __DIR__ . '/../private/grc.php';
+require __DIR__ . '/../private/attestations.php';
 
 function check(bool $ok, string $message): void {
     if (!$ok) throw new RuntimeException('FALLÓ: ' . $message);
@@ -31,7 +33,7 @@ $pdo = new PDO(
 );
 foreach (array_merge(['schema.sql'],array_map(
     static fn(int $number): string => sprintf('upgrade-%03d.sql',$number),
-    range(2,13)
+    range(2,14)
 )) as $migration) {
     $contents = file_get_contents(__DIR__.'/../private/'.$migration);
     if ($contents === false) throw new RuntimeException('Falta '.$migration);
@@ -39,7 +41,7 @@ foreach (array_merge(['schema.sql'],array_map(
         if (trim($sql) !== '') $pdo->exec($sql);
     }
 }
-echo "Migraciones 002–013 y esquema instalados.\n";
+echo "Migraciones 002–014 y esquema instalados.\n";
 foreach (['admin','supervisor','auditor','responsable'] as $role) {
     query($pdo,'INSERT INTO users(email,name,password_hash,role) VALUES (?,?,?,?)',
         [$role.'@example.test',ucfirst($role),password_hash('TestPass123456!',PASSWORD_DEFAULT),$role]);
@@ -124,4 +126,22 @@ check(query($pdo,'SELECT status FROM actions WHERE id=?',
  [$actionId])->fetchColumn()==='cerrada','Aceptación cierra acción con motivo registrado');
 check(nextState($pdo,query($pdo,'SELECT * FROM audits WHERE id=?',[$auditId])->fetch())==='cerrada',
  'Puede cerrar expediente sin acciones adicionales');
+
+// Historial inmutable de atestaciones y separación de responsabilidades.
+query($pdo,"INSERT INTO grc_obligations(framework,reference_code,title,owner_name,review_on)
+ VALUES ('SOC','CC1','Monitoreo','Cumplimiento',?)",[date('Y-m-d',strtotime('+40 days'))]);
+$obligationId=(int)$pdo->lastInsertId();
+$_POST=['obligation_id'=>(string)$obligationId,'result'=>'parcial',
+ 'evidence'=>'Acta de revisión interna','rationale'=>'Existe una excepción documentada',
+ 'reviewed'=>date('Y-m-d'),'next_review'=>date('Y-m-d',strtotime('+30 days'))];
+deny(static fn()=>saveAttestation($pdo,$auditor),'Auditor no atesta obligaciones');
+saveAttestation($pdo,$supervisor);
+$history=obligationAttestations($pdo);
+check(count($history[$obligationId]??[])===1 && $history[$obligationId][0]['result']==='parcial',
+ 'Atestación histórica documentada');
+$_POST['result']='cumple';
+saveAttestation($pdo,$supervisor);
+$history=obligationAttestations($pdo);
+check(count($history[$obligationId]??[])===2 && $history[$obligationId][0]['result']==='cumple'
+ && $history[$obligationId][1]['result']==='parcial','Nueva atestación no borra la anterior');
 echo "TODAS LAS PRUEBAS DE HUMO PASARON.\n";
