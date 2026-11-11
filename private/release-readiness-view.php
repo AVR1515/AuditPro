@@ -22,6 +22,27 @@ foreach ($declared as $entry) {
 <div><dt>Aceptaciones pendientes</dt><dd><?= e($pending['risk_pending']) ?></dd></div>
 <div><dt>Excepciones pendientes</dt><dd><?= e($pending['exceptions_pending']) ?></dd></div>
 </dl>
+<h3>Validación de declaraciones para una versión concreta</h3>
+<p class="muted">Una declaración solo corresponde al SHA completo que realmente se probó. Un resultado anterior no se transfiere a una actualización posterior.</p>
+<form method="get" action="index.php">
+<input type="hidden" name="view" value="readiness">
+<label>SHA completo de la versión instalada<input name="sha" minlength="40" maxlength="40" pattern="[a-fA-F0-9]{40}" value="<?= e((string)($_GET['sha'] ?? '')) ?>" required></label>
+<button>Comprobar declaraciones de la versión</button>
+</form>
+<?php
+$requestedSha=strtolower((string)($_GET['sha'] ?? ''));
+if (preg_match('/^[a-f0-9]{40}$/D',$requestedSha)):
+$coverage=pilotGateCoverage($pdo,$requestedSha);
+?>
+<p><strong>Declaraciones conformes: <?= e($coverage['conforming']) ?> de <?= e($coverage['required']) ?></strong> para SHA <code><?= e($requestedSha) ?></code>.</p>
+<?php if ($coverage['pending']): ?>
+<ul><?php foreach ($coverage['pending'] as $entry): ?>
+<li><?= e(PILOT_GATE_NAMES[$entry['gate']]) ?> · <?= e($entry['role']) ?> · <?= $entry['status']==='no_cumple' ? 'Última declaración: no conforme' : 'Sin declaración' ?></li>
+<?php endforeach; ?></ul>
+<?php else: ?><p>Se han registrado declaraciones conformes para todos los roles requeridos de este SHA. <strong>Esto no reemplaza la aprobación jurídica, el respaldo restaurado ni la firma externa.</strong></p><?php endif; ?>
+<?php elseif ($requestedSha!==''): ?>
+<p>El SHA debe tener exactamente 40 caracteres hexadecimales.</p>
+<?php endif; ?>
 <h3>Declaraciones de las siete verificaciones</h3>
 <p class="muted">Son resultados declarados por los roles responsables, no una certificación independiente de producción. La aceptación requiere revisar las referencias, el SHA exacto y los controles externos.</p>
 <div class="table"><table><thead><tr><th scope="col">Control</th><th scope="col">Rol responsable</th><th scope="col">Última declaración</th></tr></thead><tbody>
