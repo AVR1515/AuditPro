@@ -25,6 +25,7 @@ require __DIR__ . '/../private/risk-dashboard.php';
 require __DIR__ . '/../private/escalations.php';
 require __DIR__ . '/../private/unit-access.php';
 require __DIR__ . '/../private/scoped-overview.php';
+require __DIR__ . '/../private/policies.php';
 require __DIR__ . '/../private/retention.php';
 start();
 $error = null;
@@ -82,6 +83,12 @@ try {
         }
         if (!$user) throw new DomainException('Inicia sesión para continuar.');
         $pdo->beginTransaction();
+        if (in_array($op,POLICY_OPS,true)) {
+            if (scopedGlobalDeny($user)) throw new DomainException('Las políticas globales no están disponibles para supervisores restringidos.');
+            saveCompliancePolicy($pdo,$user,$op);
+            $pdo->commit();
+            redirect('index.php?view=policies');
+        }
         if (in_array($op,['retention_set','retention_purge'],true)) {
             saveRetention($pdo,$user,$op);
             $pdo->commit();
@@ -245,6 +252,11 @@ endPage(); return; endif; ?>
 $manager = manage($user);
 $auditor = $user['role'] === 'auditor';
 $responsible = $user['role'] === 'responsable';
+if ($view === 'policies' && canCompliance($user) && !scopedGlobalDeny($user) && !$audit) {
+    require __DIR__ . '/../private/policies-view.php';
+    endPage(true);
+    return;
+}
 if ($view === 'my-units' && restrictedSupervisor($user) && !$audit) {
     require __DIR__ . '/../private/scoped-overview-view.php';
     endPage(true);
