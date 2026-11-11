@@ -29,6 +29,7 @@ $next = $manager ? nextState($pdo,$audit) : null;
 </section>
 <?php require __DIR__ . '/hours-view.php'; ?>
 <?php require __DIR__ . '/requests-view.php'; ?>
+<?php if ($manager && $state === 'emitida') require __DIR__ . '/risk-acceptance-view.php'; ?>
 <section><h2>Pruebas y papeles de trabajo</h2>
 <?php if ($auditor && $state === 'en_campo' && ($availableTemplates = templateCatalog($pdo))): ?>
 <details><summary>Crear prueba desde plantilla</summary><?php form('template_apply',$keys); ?>
@@ -78,6 +79,14 @@ foreach ($actions as $action): $actionKeys = $keys + ['action_id'=>$action['id']
 <article id="action-<?= e($action['id']) ?>"><?php copyBlock('Acción',$action['description']); ?>
 <p><?= e($action['name']) ?> · Vence <?= e($action['due_date']) ?> · <?= e(str_replace('_',' ',$action['status'])) ?></p>
 <?php if ($action['evidence'] !== null) copyBlock('Evidencia presentada',$action['evidence']); ?>
+<?php if ($state === 'emitida' && $manager && $action['status'] === 'abierta' && !query($pdo,"SELECT 1 FROM action_risk_acceptances WHERE action_id=? AND status='pendiente' LIMIT 1",[$action['id']])->fetchColumn()): ?>
+<details><summary>Solicitar aceptación excepcional del riesgo</summary>
+<?php form('risk_accept_request',$actionKeys); ?>
+<label>Justificación del riesgo residual<textarea name="rationale" maxlength="12000" required></textarea></label>
+<label>Controles compensatorios<textarea name="compensating" maxlength="12000" required></textarea></label>
+<label>Fecha de revisión<input type="date" name="expires" min="<?= e(date('Y-m-d',strtotime('+1 day'))) ?>" required></label>
+<button>Solicitar aprobación independiente</button></form></details>
+<?php endif; ?>
 <?php if ($state === 'emitida' && $manager && $action['status'] !== 'cerrada'): ?>
 <details><summary>Registrar prórroga</summary><?php form('extend',$actionKeys); ?>
 <label>Nuevo vencimiento<input type="date" name="due" required></label>
