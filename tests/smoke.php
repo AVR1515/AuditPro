@@ -412,6 +412,19 @@ check(count($linkedTests[$authorizedRisk][$controlShared]??[])===1 &&
     (int)$linkedTests[$authorizedRisk][$controlShared][0]['test_id']===(int)$test['id'],
     'Control compartido solo muestra prueba de expediente autorizado');
 check(empty($linkedTests[$foreignRisk]),'No filtra trazabilidad de riesgo ajeno');
+// Las obligaciones deben filtrarse por riesgo, nunca por rol de supervisor.
+query($pdo,'INSERT INTO grc_obligation_controls(obligation_id,control_id) VALUES (?,?)',
+ [$obligationId,$controlShared]);
+query($pdo,"INSERT INTO grc_obligations(framework,reference_code,title,owner_name,review_on)
+ VALUES ('SOC','RESERVADA','Obligación privada','Otra gerencia',?)",[date('Y-m-d',strtotime('+25 days'))]);
+$foreignObligation=(int)$pdo->lastInsertId();
+query($pdo,'INSERT INTO grc_obligation_controls(obligation_id,control_id) VALUES (?,?)',
+ [$foreignObligation,$foreignControl]);
+$visibleObligations=scopedObligations($pdo,$restrictedUser);
+check(count($visibleObligations)===1 &&
+ (int)$visibleObligations[0]['id']===$obligationId,
+ 'Cumplimiento filtrado: obligación autorizada visible, obligación de otra unidad oculta');
+
 $_POST=['supervisor_id'=>'2','unit_id'=>(string)$unit];
 saveUnitGrant($pdo,$admin,'unit_revoke');
 deny(static fn()=>accessible($pdo,$restrictedUser,$auditId),'Revocación se aplica inmediatamente');
