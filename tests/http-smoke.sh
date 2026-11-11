@@ -61,6 +61,11 @@ grep -q 'Guardar medición' "$tmp/scoped.html"
 grep -q 'Cobertura de auditorías por unidad' "$tmp/scoped.html"
 grep -q 'Control compartido' "$tmp/scoped.html"
 grep -q 'Obligaciones relacionadas con mis riesgos' "$tmp/scoped.html"
+grep -q 'Plan operativo de expedientes autorizados' "$tmp/scoped.html"
+if grep -q 'Auditoría privada' "$tmp/scoped.html"; then
+  echo 'ERROR: plan operativo muestra expediente ajeno a supervisor restringido' >&2
+  exit 1
+fi
 grep -q 'Monitoreo' "$tmp/scoped.html"
 if grep -q 'Obligación privada' "$tmp/scoped.html"; then
   echo 'ERROR: obligación fuera de unidad expuesta a supervisor restringido' >&2
