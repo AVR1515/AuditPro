@@ -7,6 +7,13 @@ $reminders = unreadReminders($pdo,$user);
 $escalations = manage($user) && !restrictedSupervisor($user) ? unreadEscalations($pdo,$user) : [];
 ?>
 <?php if (manage($user) && !restrictedSupervisor($user)): $escalationSettings=escalationPolicy($pdo); ?>
+<section><h2>Salud de la tarea diaria de avisos</h2>
+<?php $cronHealth=reminderJobHealth($pdo,new DateTimeImmutable()); ?>
+<p><?= $cronHealth['healthy'] ? 'Ejecución reciente confirmada' : 'Atención: sin ejecución reciente confirmada' ?>
+ · Último éxito: <?= e($cronHealth['last_success_at'] ?? 'Sin registrar') ?>
+ · Ejecuciones correctas: <?= e($cronHealth['successful_runs']) ?></p>
+<p class="muted">La tarea debería ejecutarse al menos una vez al día. Un resultado de prueba local no demuestra que cron o el Programador de tareas del servidor estén configurados.</p>
+</section>
 <section><h2>Escalamiento de acciones vencidas</h2>
 <p class="muted">Avisos internos a supervisores y administradores después del número configurado de días de retraso; se generan con el proceso diario local, sin correos ni servicios externos.</p>
 <p>Estado: <?= (int)$escalationSettings['enabled'] ? 'Activo' : 'Desactivado' ?> · Umbral: <?= e($escalationSettings['overdue_days']) ?> días.</p>
