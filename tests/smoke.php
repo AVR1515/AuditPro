@@ -17,6 +17,7 @@ require __DIR__ . '/../private/kri.php';
 require __DIR__ . '/../private/inbox.php';
 require __DIR__ . '/../private/risk-dashboard.php';
 require __DIR__ . '/../private/escalations.php';
+require __DIR__ . '/../private/recovery.php';
 require __DIR__ . '/../private/reminders.php';
 
 function check(bool $ok, string $message): void {
@@ -276,4 +277,24 @@ check((int)query($pdo,'SELECT COUNT(*) FROM action_escalations WHERE action_id=?
 $_POST=['enabled'=>'0','overdue_days'=>'3'];
 saveEscalationPolicy($pdo,$admin);
 check((int)escalationPolicy($pdo)['enabled']===0,'Administración desactiva el escalamiento');
+
+// Recuperación local: requiere token fuera de la aplicación, cuenta admin activa y bitácora.
+$recoveryToken=bin2hex(random_bytes(32));
+$recoveryConfig=['recovery_token_hash'=>hash('sha256',$recoveryToken)];
+$oldHash=query($pdo,'SELECT password_hash FROM users WHERE id=1')->fetchColumn();
+deny(static fn()=>recoverAdminPassword($pdo,$recoveryConfig,'admin@example.test','token-equivocado'),
+ 'No recupera con token incorrecto');
+check(query($pdo,'SELECT password_hash FROM users WHERE id=1')->fetchColumn()===$oldHash,
+ 'Intento denegado no cambia contraseña');
+deny(static fn()=>recoverAdminPassword($pdo,$recoveryConfig,'auditor@example.test',$recoveryToken),
+ 'No recupera cuentas que no son administradoras');
+deny(static fn()=>recoverAdminPassword($pdo,[],'admin@example.test',$recoveryToken),
+ 'Recuperación deshabilitada sin configuración');
+$newPassword=recoverAdminPassword($pdo,$recoveryConfig,'admin@example.test',$recoveryToken);
+$newHash=query($pdo,'SELECT password_hash FROM users WHERE id=1')->fetchColumn();
+check(validPassword($newPassword) && password_verify($newPassword,$newHash),
+ 'Genera contraseña temporal segura para administrador');
+check($newHash!==$oldHash,'La recuperación invalida el hash de sesiones anteriores');
+check((int)query($pdo,"SELECT COUNT(*) FROM audit_log WHERE event='recuperacion_administrativa'")->fetchColumn()===1,
+ 'Registra recuperación en bitácora sin guardar el secreto');
 echo "TODAS LAS PRUEBAS DE HUMO PASARON.\n";
