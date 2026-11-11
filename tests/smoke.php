@@ -8,6 +8,7 @@ require __DIR__ . '/../private/requests.php';
 require __DIR__ . '/../private/templates.php';
 require __DIR__ . '/../private/capacity.php';
 require __DIR__ . '/../private/universe.php';
+require __DIR__ . '/../private/risk-acceptance.php';
 
 function check(bool $ok, string $message): void {
     if (!$ok) throw new RuntimeException('FALLÓ: ' . $message);
@@ -30,7 +31,7 @@ $pdo = new PDO(
 );
 foreach (array_merge(['schema.sql'],array_map(
     static fn(int $number): string => sprintf('upgrade-%03d.sql',$number),
-    range(2,12)
+    range(2,13)
 )) as $migration) {
     $contents = file_get_contents(__DIR__.'/../private/'.$migration);
     if ($contents === false) throw new RuntimeException('Falta '.$migration);
@@ -38,7 +39,7 @@ foreach (array_merge(['schema.sql'],array_map(
         if (trim($sql) !== '') $pdo->exec($sql);
     }
 }
-echo "Migraciones 002–012 y esquema instalados.\n";
+echo "Migraciones 002–013 y esquema instalados.\n";
 foreach (['admin','supervisor','auditor','responsable'] as $role) {
     query($pdo,'INSERT INTO users(email,name,password_hash,role) VALUES (?,?,?,?)',
         [$role.'@example.test',ucfirst($role),password_hash('TestPass123456!',PASSWORD_DEFAULT),$role]);
@@ -96,4 +97,31 @@ $assessment=(int)$pdo->lastInsertId();
 query($pdo,'INSERT INTO audit_assessment_links(audit_id,assessment_id) VALUES (?,?)',[$auditId,$assessment]);
 $coverage=unitCoverage($pdo);
 check(count($coverage)===1 && (int)$coverage[0]['audit_count']===1,'Cobertura histórica por unidad vinculada');
+
+// Riesgo residual: solicitud, independencia y aprobación rastreable.
+query($pdo,"INSERT INTO findings(test_id,title,severity,criterion,condition_text,cause,effect,recommendation)
+ VALUES (?,'Diferencia material','alto','Política','Diferencia','Proceso','Riesgo','Conciliar')",[$test['id']]);
+$findingId=(int)$pdo->lastInsertId();
+query($pdo,"INSERT INTO actions(finding_id,owner_id,description,due_date) VALUES (?,4,'Subsanar diferencia',?)",
+ [$findingId,date('Y-m-d',strtotime('+30 days'))]);
+$actionId=(int)$pdo->lastInsertId();
+query($pdo,"UPDATE audits SET status='emitida' WHERE id=?",[$auditId]);
+$_POST=['audit_id'=>(string)$auditId,'action_id'=>(string)$actionId,
+ 'rationale'=>'Costo desproporcionado','compensating'=>'Revisión mensual',
+ 'expires'=>date('Y-m-d',strtotime('+40 days'))];
+deny(static fn()=>saveRiskAcceptance($pdo,$auditor,'risk_accept_request'),'Auditor no solicita aceptación');
+saveRiskAcceptance($pdo,$supervisor,'risk_accept_request');
+$acceptId=(int)query($pdo,'SELECT id FROM action_risk_acceptances WHERE action_id=? ORDER BY id DESC LIMIT 1',
+ [$actionId])->fetchColumn();
+check($acceptId>0,'Se registra solicitud de aceptación');
+$_POST=['audit_id'=>(string)$auditId,'acceptance_id'=>(string)$acceptId,
+ 'decision'=>'aceptada','decision_note'=>'Aprobación separada'];
+deny(static fn()=>saveRiskAcceptance($pdo,$supervisor,'risk_accept_decide'),'Nadie aprueba su propia solicitud');
+saveRiskAcceptance($pdo,$admin,'risk_accept_decide');
+check(query($pdo,'SELECT status FROM action_risk_acceptances WHERE id=?',
+ [$acceptId])->fetchColumn()==='aceptada','Aceptación aprobada independientemente');
+check(query($pdo,'SELECT status FROM actions WHERE id=?',
+ [$actionId])->fetchColumn()==='cerrada','Aceptación cierra acción con motivo registrado');
+check(nextState($pdo,query($pdo,'SELECT * FROM audits WHERE id=?',[$auditId])->fetch())==='cerrada',
+ 'Puede cerrar expediente sin acciones adicionales');
 echo "TODAS LAS PRUEBAS DE HUMO PASARON.\n";
