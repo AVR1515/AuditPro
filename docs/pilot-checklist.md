@@ -30,6 +30,12 @@ Este documento no certifica el despliegue ni reemplaza la aprobación del equipo
 - [ ] **Supervisor restringido:** no puede crear ni archivar indicadores globales.
 - [ ] **Riesgos:** mide KRI, revisa el riesgo residual y verifica alertas cuando hay exceso de umbral.
 
+- [ ] **Cobertura:** comprobar fecha de cierre efectiva en una auditoría cerrada y datos históricos marcados como aproximados.
+- [ ] **Evidencia:** responder una solicitud enlazando un adjunto del expediente; rechazar un ID ajeno.
+- [ ] **KRI:** configurar periodo máximo, simular medición vencida y verificar alerta de caducidad.
+- [ ] **Plan:** comprobar que la vista por unidad no lista expedientes ajenos y que la previsión multianual deduplica compromisos de planes aprobados.
+- [ ] **Panel ejecutivo:** verificar alertas vencidas de solicitudes, obligaciones, riesgos aceptados y excepciones.
+
 ## Datos y retención
 
 - [ ] Descargar un adjunto autorizado y comprobar su SHA-256.
