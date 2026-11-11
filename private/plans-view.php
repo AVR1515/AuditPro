@@ -7,6 +7,7 @@ foreach ($pdo->query("SELECT * FROM annual_plan_items ORDER BY FIELD(risk,'criti
     $itemsByPlan[$item['plan_id']][] = $item;
 }
 ?>
+<?php require __DIR__ . '/risk-dashboard-view.php'; ?>
 <?php require __DIR__ . '/capacity-view.php'; ?>
 <?php require __DIR__ . '/multiyear-view.php'; ?>
 <section><h2>Crear versión del plan anual</h2>
