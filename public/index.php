@@ -24,6 +24,7 @@ require __DIR__ . '/../private/kri.php';
 require __DIR__ . '/../private/risk-dashboard.php';
 require __DIR__ . '/../private/escalations.php';
 require __DIR__ . '/../private/unit-access.php';
+require __DIR__ . '/../private/retention.php';
 start();
 $error = null;
 $user = null;
@@ -80,6 +81,11 @@ try {
         }
         if (!$user) throw new DomainException('Inicia sesión para continuar.');
         $pdo->beginTransaction();
+        if (in_array($op,['retention_set','retention_purge'],true)) {
+            saveRetention($pdo,$user,$op);
+            $pdo->commit();
+            redirect('index.php?view=retention');
+        }
         if (in_array($op,['unit_scope','unit_grant','unit_revoke'],true)) {
             saveUnitGrant($pdo,$user,$op);
             $pdo->commit();
@@ -237,6 +243,11 @@ endPage(); return; endif; ?>
 $manager = manage($user);
 $auditor = $user['role'] === 'auditor';
 $responsible = $user['role'] === 'responsable';
+if ($view === 'retention' && $user['role'] === 'admin' && !$audit) {
+    require __DIR__ . '/../private/retention-view.php';
+    endPage(true);
+    return;
+}
 if ($view === 'unit-access' && $user['role'] === 'admin' && !$audit) {
     require __DIR__ . '/../private/unit-access-view.php';
     endPage(true);
