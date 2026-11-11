@@ -6,6 +6,7 @@ $scopedCoverage=scopedUnitCoverage($pdo,$user);
 $scopedControls=scopedRiskControls($pdo,$user);
 $scopedTests=scopedControlTests($pdo,$user);
 $scopedObligations=scopedObligations($pdo,$user);
+$scopedPlan=scopedAnnualPlanning($pdo,$user);
 ?>
 <section><h2>Mis unidades y riesgos</h2>
 <p class="muted">Solo se muestran unidades y riesgos concedidos a tu cuenta. Puedes revisar el riesgo residual y registrar mediciones de indicadores existentes dentro de tus unidades. Crear o archivar indicadores y gestionar vínculos globales continúa reservado. Se muestra la trazabilidad de controles con pruebas exclusivamente de expedientes autorizados.</p>
@@ -17,6 +18,17 @@ $scopedObligations=scopedObligations($pdo,$user);
 <?php foreach ($scopedUnits as $unit): ?>
 <tr><td><?= e($unit['name']) ?></td><td><?= e($unit['process_name']) ?></td><td><?= e($unit['accountable']) ?></td><td><?= e($unit['cycle_months']) ?> meses</td></tr>
 <?php endforeach; ?></tbody></table></div><?php endif; ?>
+<h3>Plan operativo de expedientes autorizados</h3>
+<p class="muted">Vista de solo lectura de expedientes vinculados a tus unidades; los planes anuales globales y su aprobación permanecen reservados a supervisión general.</p>
+<?php if (!$scopedPlan): ?><p class="muted">No hay expedientes vinculados a tus unidades.</p>
+<?php else: ?><div class="table"><table><thead><tr><th scope="col">Expediente</th><th scope="col">Año</th><th scope="col">Estado</th><th scope="col">Auditor</th><th scope="col">Horas previstas</th><th scope="col">Horas realizadas</th></tr></thead><tbody>
+<?php foreach ($scopedPlan as $work): ?><tr>
+<td><a href="index.php?id=<?= e($work['id']) ?>"><?= e($work['title']) ?></a></td>
+<td><?= e($work['year']) ?></td><td><?= e($work['status']) ?></td>
+<td><?= e($work['auditor']) ?></td>
+<td><?= e(displayHours((int)$work['planned_minutes'])) ?></td>
+<td><?= e(displayHours((int)$work['worked_minutes'])) ?></td>
+</tr><?php endforeach; ?></tbody></table></div><?php endif; ?>
 <h3>Obligaciones relacionadas con mis riesgos</h3>
 <p class="muted">Vista de solo lectura. Solo se incluyen obligaciones enlazadas a controles de riesgos pertenecientes a las unidades autorizadas; ninguna aprobación de cumplimiento se concede por este acceso.</p>
 <?php if (!$scopedObligations): ?><p class="muted">No hay obligaciones vinculadas a controles de tus unidades.</p>
