@@ -19,6 +19,7 @@ jobs:
         run: |
           bash -n tests/http-smoke.sh
           bash -n tests/deployment-probe.sh
+          bash -n tests/restore-smoke.sh
           test -s docs/production-release-gates.md
           test -s docs/restore-verification.md
       - name: Verificar migración de solicitudes
@@ -88,6 +89,12 @@ jobs:
           AUDITPRO_TEST_USER: root
           AUDITPRO_TEST_PASSWORD: testpass
         run: php tests/smoke.php
+      - name: Verificar respaldo y restauración con datos ficticios
+        env:
+          AUDITPRO_TEST_DATABASE: auditpro_test
+          AUDITPRO_TEST_USER: root
+          AUDITPRO_TEST_PASSWORD: testpass
+        run: bash tests/restore-smoke.sh
       - name: Probar acceso HTTP y autorizaciones de interfaz
         env:
           AUDITPRO_DEV: '1'
