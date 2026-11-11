@@ -29,6 +29,7 @@ require __DIR__ . '/../private/policies.php';
 require __DIR__ . '/../private/retention.php';
 require __DIR__ . '/../private/preflight.php';
 require __DIR__ . '/../private/release-readiness.php';
+require __DIR__ . '/../private/pilot-signoffs.php';
 start();
 $error = null;
 $user = null;
@@ -85,6 +86,11 @@ try {
         }
         if (!$user) throw new DomainException('Inicia sesión para continuar.');
         $pdo->beginTransaction();
+        if ($op === 'pilot_signoff') {
+            savePilotGateSignoff($pdo,$user);
+            $pdo->commit();
+            redirect('index.php?view=pilot-signoffs');
+        }
         if (in_array($op,POLICY_OPS,true)) {
             if (scopedGlobalDeny($user)) throw new DomainException('Las políticas globales no están disponibles para supervisores restringidos.');
             saveCompliancePolicy($pdo,$user,$op);
@@ -262,6 +268,11 @@ if ($view === 'policies' && canCompliance($user) && !scopedGlobalDeny($user) && 
 }
 if ($view === 'my-units' && restrictedSupervisor($user) && !$audit) {
     require __DIR__ . '/../private/scoped-overview-view.php';
+    endPage(true);
+    return;
+}
+if ($view === 'pilot-signoffs' && in_array($user['role'],['admin','supervisor','riesgos','cumplimiento'],true) && !$audit) {
+    require __DIR__ . '/../private/pilot-signoffs-view.php';
     endPage(true);
     return;
 }
