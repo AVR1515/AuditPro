@@ -40,6 +40,7 @@ jobs:
           grep -q "upgrade-023.sql" public/install.php
           grep -q "upgrade-024.sql" public/install.php
           grep -q "upgrade-025.sql" public/install.php
+          grep -q "upgrade-026.sql" public/install.php
           grep -q "policies.php" public/index.php
           grep -q "retention.php" public/index.php
           grep -q "unit-access.php" public/index.php
