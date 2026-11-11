@@ -40,7 +40,10 @@ function evidenceRequestInbox(PDO $pdo, array $user): array {
         JOIN users u ON u.id=d.owner_id
         WHERE r.status<>'cerrada' AND d.status IN ('en_campo','en_revision')";
     $params = [];
-    if (!manage($user)) {
+    if (restrictedSupervisor($user)) {
+        $sql .= ' AND EXISTS (SELECT 1 FROM audit_assessment_links l JOIN risk_assessments risk ON risk.id=l.assessment_id JOIN supervisor_unit_grants g ON g.unit_id=risk.unit_id WHERE l.audit_id=d.id AND g.user_id=?)';
+        $params[]=$user['id'];
+    } elseif (!manage($user)) {
         $sql .= ' AND d.owner_id=? AND r.status=\'abierta\'';
         $params[] = $user['id'];
     }
