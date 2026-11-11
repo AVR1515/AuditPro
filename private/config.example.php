@@ -8,4 +8,6 @@ return [
     'install_user' => '',
     'install_password' => '',
     'install_token' => '',
+    // Opcional: SHA-256 de un token secreto, guardado fuera de la raíz pública.
+    'recovery_token_hash' => '',
 ];
