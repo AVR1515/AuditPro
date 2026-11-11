@@ -59,6 +59,15 @@ grep -q 'Liquidez' "$tmp/scoped.html"
 grep -q 'Incidencias' "$tmp/scoped.html"
 grep -q 'Guardar medición' "$tmp/scoped.html"
 grep -q 'Cobertura de auditorías por unidad' "$tmp/scoped.html"
+grep -q 'Control compartido' "$tmp/scoped.html"
+if grep -q 'Prueba privada' "$tmp/scoped.html"; then
+  echo 'ERROR: prueba de expediente ajeno expuesta a supervisor restringido' >&2
+  exit 1
+fi
+if grep -q 'Control ajeno' "$tmp/scoped.html"; then
+  echo 'ERROR: control exclusivo de riesgo ajeno expuesto a supervisor restringido' >&2
+  exit 1
+fi
 if grep -q 'Indicador reservado' "$tmp/scoped.html"; then
   echo 'ERROR: KRI de otra unidad expuesto a supervisor restringido' >&2
   exit 1
