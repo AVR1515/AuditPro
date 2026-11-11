@@ -10,7 +10,7 @@ $evaluations = assessments($pdo);
 <?php
 $coverage = unitCoverage($pdo);
 $coverageYear = (int) date('Y');
-$coverageGaps = count(array_filter($coverage,static fn(array $row): bool => coverageStatus($row,$coverageYear) !== 'Dentro del ciclo aproximado'));
+$coverageGaps = count(array_filter($coverage,static fn(array $row): bool => coverageNeedsReview($row,$coverageYear)));
 ?>
 <section><h2>Cobertura histórica por unidad</h2>
 <p class="muted">Prioriza los procesos de mayor riesgo sin auditorías vinculadas o fuera de su ciclo. Para expedientes cerrados después de la actualización 022 utiliza su fecha efectiva de cierre. En auditorías históricas sin cierre fechado conserva una estimación por año, señalada como aproximada.</p>
