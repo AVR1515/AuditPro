@@ -1,6 +1,6 @@
 <?php
 declare(strict_types=1);
-const RISK_ACCEPTANCE_OPS = ['risk_accept_request','risk_accept_decide'];
+const RISK_ACCEPTANCE_OPS = ['risk_accept_request','risk_accept_decide','risk_accept_refresh'];
 
 function riskAcceptanceHistory(PDO $pdo, int $auditId): array {
     return query($pdo,'SELECT r.*,a.description AS action_description,requester.name AS requester_name,decider.name AS decider_name
@@ -15,8 +15,33 @@ function saveRiskAcceptance(PDO $pdo, array $user, string $op): int {
     if (!manage($user)) throw new DomainException('Solo supervisión puede gestionar aceptaciones de riesgo.');
     $auditId=positiveId('audit_id');
     $audit=accessible($pdo,$user,$auditId,true);
-    if ($audit['status'] !== 'emitida') throw new DomainException('Se requiere un informe emitido.');
+    if (!in_array($audit['status'],$op==='risk_accept_refresh'?['emitida','cerrada']:['emitida'],true))
+        throw new DomainException('Se requiere un informe emitido o cerrado para revisar la aceptación.');
     $actor=(int)$user['id'];
+    if ($op==='risk_accept_refresh') {
+        $acceptId=positiveId('acceptance_id');
+        $accept=query($pdo,'SELECT r.* FROM action_risk_acceptances r
+            JOIN actions a ON a.id=r.action_id
+            JOIN findings f ON f.id=a.finding_id
+            JOIN tests t ON t.id=f.test_id
+            WHERE r.id=? AND t.audit_id=? FOR UPDATE',[$acceptId,$auditId])->fetch();
+        if (!$accept || $accept['status']!=='aceptada') {
+            throw new DomainException('No existe una aceptación vigente de riesgo para revisar.');
+        }
+        if ((int)$accept['requested_by']===$actor)
+            throw new DomainException('La revisión requiere una cuenta distinta del solicitante.');
+        $next=dateField('next_review');
+        if ($next<=date('Y-m-d')) throw new DomainException('La próxima revisión debe ser futura.');
+        $conclusion=field('conclusion',12000);
+        query($pdo,'INSERT INTO action_risk_reviews
+            (acceptance_id,reviewed_by,previous_review_on,next_review_on,conclusion)
+            VALUES (?,?,?,?,?)',
+            [$acceptId,$actor,$accept['review_on'],$next,$conclusion]);
+        query($pdo,'UPDATE action_risk_acceptances SET review_on=? WHERE id=?',[$next,$acceptId]);
+        record($pdo,$actor,$auditId,'riesgo_revalidado',"Aceptación #$acceptId · próxima revisión $next");
+        return $auditId;
+    }
+
     if ($op==='risk_accept_request') {
         $actionId=positiveId('action_id');
         $action=query($pdo,'SELECT a.id,a.status FROM actions a
@@ -58,4 +83,18 @@ function saveRiskAcceptance(PDO $pdo, array $user, string $op): int {
         return $auditId;
     }
     throw new DomainException('Operación no autorizada.');
+}
+
+/** Historial de revalidaciones de aceptación; cada decisión previa permanece intacta. */
+function riskAcceptanceReviews(PDO $pdo,int $auditId): array {
+    $rows=[];
+    foreach (query($pdo,'SELECT v.*,u.name AS reviewer_name FROM action_risk_reviews v
+        JOIN users u ON u.id=v.reviewed_by
+        JOIN action_risk_acceptances r ON r.id=v.acceptance_id
+        JOIN actions a ON a.id=r.action_id
+        JOIN findings f ON f.id=a.finding_id JOIN tests t ON t.id=f.test_id
+        WHERE t.audit_id=? ORDER BY v.id DESC',[$auditId]) as $row) {
+        $rows[$row['acceptance_id']][]=$row;
+    }
+    return $rows;
 }
