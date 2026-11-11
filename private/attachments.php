@@ -24,11 +24,11 @@ function storeAttachment(PDO $pdo, int $actor, string $kind, int $parent): void 
 
 function listAttachments(PDO $pdo, string $kind, int $parent): void {
     $column = $kind === 'test' ? 'test_id' : 'action_id';
-    $files = query($pdo,"SELECT id,filename,bytes,sha256,created_at FROM attachments WHERE $column=? ORDER BY id",[$parent])->fetchAll();
+    $files = query($pdo,"SELECT id,filename,bytes,sha256,created_at,purged_at FROM attachments WHERE $column=? ORDER BY id",[$parent])->fetchAll();
     if (!$files) return;
     echo '<ul aria-label="Archivos de evidencia">';
     foreach ($files as $file) {
-        echo '<li><a href="index.php?download=' . e($file['id']) . '">' . e($file['filename']) . '</a> · ' .
+        echo '<li>' . ($file['purged_at'] ? e($file['filename']) . ' (contenido purgado)' : '<a href="index.php?download=' . e($file['id']) . '">' . e($file['filename']) . '</a>') . ' · ' .
             e($file['bytes']) . ' bytes · ' . e($file['created_at']) .
             '<details><summary>Huella SHA-256</summary><code class="copy">' . e($file['sha256']) . '</code></details></li>';
     }
@@ -36,12 +36,12 @@ function listAttachments(PDO $pdo, string $kind, int $parent): void {
 }
 
 function downloadAttachment(PDO $pdo, array $user, int $id): never {
-    $file = query($pdo,'SELECT b.filename,b.bytes,b.sha256,COALESCE(t.audit_id,at.audit_id) AS audit_id,
+    $file = query($pdo,'SELECT b.filename,b.bytes,b.sha256,b.purged_at,COALESCE(t.audit_id,at.audit_id) AS audit_id,
         a.owner_id AS action_owner,d.status
         FROM attachments b LEFT JOIN tests t ON t.id=b.test_id LEFT JOIN actions a ON a.id=b.action_id
         LEFT JOIN findings f ON f.id=a.finding_id LEFT JOIN tests at ON at.id=f.test_id
         JOIN audits d ON d.id=COALESCE(t.audit_id,at.audit_id) WHERE b.id=?',[$id])->fetch();
-    if (!$file || ($user['role'] === 'responsable' &&
+    if (!$file || $file['purged_at']!==null || ($user['role'] === 'responsable' &&
         ((int) $file['action_owner'] !== (int) $user['id'] || !in_array($file['status'],['emitida','cerrada'],true)))) {
         throw new DomainException('Archivo no disponible.');
     }
