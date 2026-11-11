@@ -50,7 +50,7 @@ if ($pdo->query('SELECT DATABASE()')->fetchColumn() !== 'auditpro_test') {
 }
 foreach (array_merge(['schema.sql'],array_map(
     static fn(int $number): string => sprintf('upgrade-%03d.sql',$number),
-    range(2,25)
+    range(2,26)
 )) as $migration) {
     $contents = file_get_contents(__DIR__.'/../private/'.$migration);
     if ($contents === false) throw new RuntimeException('Falta '.$migration);
@@ -58,7 +58,7 @@ foreach (array_merge(['schema.sql'],array_map(
         if (trim($sql) !== '') $pdo->exec($sql);
     }
 }
-echo "Migraciones 002–025 y esquema instalados.\n";
+echo "Migraciones 002–026 y esquema instalados.\n";
 foreach (['admin','supervisor','auditor','responsable'] as $role) {
     query($pdo,'INSERT INTO users(email,name,password_hash,role) VALUES (?,?,?,?)',
         [$role.'@example.test',ucfirst($role),password_hash('TestPass123456!',PASSWORD_DEFAULT),$role]);
@@ -526,7 +526,24 @@ check(query($pdo,'SELECT content FROM attachments WHERE id=?',[$evidenceId])->fe
 query($pdo,"UPDATE attachments SET created_at='2024-01-01 00:00:00',
  retention_until='2025-01-15' WHERE id=?",[$evidenceId]);
 query($pdo,"UPDATE audits SET status='cerrada' WHERE id=?",[$auditId]);
+deny(static fn()=>saveRetention($pdo,$admin,'retention_purge'),
+ 'Purgado irreversible requiere autorización previa');
+$_POST=['attachment_id'=>(string)$evidenceId,'rationale'=>'Plazo vencido, respaldo verificado, aprobación jurídica referenciada'];
+saveRetention($pdo,$admin,'retention_request');
+$purgeAuthorizationId=(int)query($pdo,'SELECT MAX(id) FROM attachment_purge_authorizations WHERE attachment_id=?',[$evidenceId])->fetchColumn();
+check($purgeAuthorizationId>0,'Solicitud formal de purgado registrada');
+$_POST=['attachment_id'=>(string)$evidenceId,'authorization_id'=>(string)$purgeAuthorizationId,
+ 'decision'=>'aprobada','decision_note'=>'Revisado respaldo y periodo legal'];
+deny(static fn()=>saveRetention($pdo,$admin,'retention_decide'),
+ 'Quien solicita una purga no puede aprobarla');
+query($pdo,'INSERT INTO users(email,name,password_hash,role) VALUES (?,?,?,?)',
+ ['segundo-admin@example.test','Segundo administrador',password_hash('TestPass123456!',PASSWORD_DEFAULT),'admin']);
+$secondAdmin=['id'=>(int)$pdo->lastInsertId(),'role'=>'admin'];
+saveRetention($pdo,$secondAdmin,'retention_decide');
+$_POST=['attachment_id'=>(string)$evidenceId,'confirmation'=>'PURGAR'];
 saveRetention($pdo,$admin,'retention_purge');
+check(query($pdo,'SELECT status FROM attachment_purge_authorizations WHERE id=?',[$purgeAuthorizationId])->fetchColumn()==='ejecutada',
+ 'La autorización de purga registra su ejecución');
 check(query($pdo,'SELECT content FROM attachments WHERE id=?',[$evidenceId])->fetchColumn()===null,
  'Contenido vencido se elimina tras confirmación');
 $purged=query($pdo,'SELECT sha256,purged_at FROM attachments WHERE id=?',[$evidenceId])->fetch();
