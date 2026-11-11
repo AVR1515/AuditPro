@@ -109,6 +109,7 @@ if ($user['role']==='admin') { $sections['unit-access']='Acceso por unidad'; $se
 if ($user['role']==='supervisor' && (int)($user['unit_restricted'] ?? 0)===1) $sections['my-units']='Mis unidades y riesgos';
 if ($user['role'] === 'auditor' || (manage($user) && !($user['role']==='supervisor' && (int)($user['unit_restricted'] ?? 0)===1))) $sections['templates'] = 'Plantillas de pruebas';
 if (in_array($user['role'],['admin','supervisor','cumplimiento'],true) && !($user['role']==='supervisor' && (int)($user['unit_restricted'] ?? 0)===1)) $sections['policies']='Políticas';
+if (in_array($user['role'],['admin','supervisor','riesgos','cumplimiento'],true)) $sections['pilot-signoffs']='Evidencias del piloto';
 $sections['account'] = 'Mi cuenta';
 foreach ($sections as $key=>$label):
     $href = 'index.php' . ($key ? '?view=' . $key : '');
