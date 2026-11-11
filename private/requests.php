@@ -34,7 +34,21 @@ function saveEvidenceRequest(PDO $pdo, array $user, string $op): int {
     if ($op === 'request_answer') {
         if (!$auditor || !$active || $request['status'] !== 'abierta') throw new DomainException('No se puede responder esta solicitud.');
         $answer = field('answer',12000);
+        $fileId=null;
+        if (isset($_POST['attachment_id']) && $_POST['attachment_id']!=='') {
+            $fileId=positiveId('attachment_id');
+            $file=query($pdo,'SELECT b.id FROM attachments b
+                JOIN tests t ON t.id=b.test_id
+                WHERE b.id=? AND t.audit_id=? AND b.purged_at IS NULL',
+                [$fileId,$auditId])->fetch();
+            if (!$file) throw new DomainException('Selecciona una evidencia de prueba disponible en este expediente.');
+        }
         query($pdo,'INSERT INTO evidence_request_responses(request_id,author_id,response_text) VALUES (?,?,?)',[$requestId,$actor,$answer]);
+        $responseId=(int)$pdo->lastInsertId();
+        if ($fileId!==null) {
+            query($pdo,'INSERT INTO evidence_request_attachments(response_id,attachment_id) VALUES (?,?)',
+                [$responseId,$fileId]);
+        }
         query($pdo,"UPDATE evidence_requests SET status='respondida' WHERE id=?",[$requestId]);
         record($pdo,$actor,$auditId,'solicitud_respondida','Solicitud #' . $requestId);
     } elseif ($op === 'request_close') {
