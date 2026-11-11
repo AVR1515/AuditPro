@@ -2,6 +2,7 @@
 $scopedUnits=scopedUnitOverview($pdo,$user);
 $scopedRisks=scopedRiskOverview($pdo,$user);
 $scopedIndicators=scopedRiskIndicators($pdo,$user);
+$scopedCoverage=scopedUnitCoverage($pdo,$user);
 ?>
 <section><h2>Mis unidades y riesgos</h2>
 <p class="muted">Solo se muestran unidades y riesgos concedidos a tu cuenta. Puedes revisar el riesgo residual y registrar mediciones de indicadores existentes dentro de tus unidades. Crear o archivar indicadores, gestionar controles y consultar datos globales continúa reservado.</p>
@@ -12,6 +13,15 @@ $scopedIndicators=scopedRiskIndicators($pdo,$user);
 <div class="table"><table><thead><tr><th scope="col">Unidad</th><th scope="col">Proceso</th><th scope="col">Responsable</th><th scope="col">Ciclo</th></tr></thead><tbody>
 <?php foreach ($scopedUnits as $unit): ?>
 <tr><td><?= e($unit['name']) ?></td><td><?= e($unit['process_name']) ?></td><td><?= e($unit['accountable']) ?></td><td><?= e($unit['cycle_months']) ?> meses</td></tr>
+<?php endforeach; ?></tbody></table></div><?php endif; ?>
+<h3>Cobertura de auditorías por unidad</h3>
+<p class="muted">Las auditorías solo se cuentan cuando están vinculadas a una evaluación de la unidad. El ciclo se estima por años y no sustituye las fechas efectivas de trabajo.</p>
+<?php if ($scopedCoverage): ?>
+<div class="table"><table><thead><tr><th scope="col">Unidad</th><th scope="col">Auditorías vinculadas</th><th scope="col">Último año</th><th scope="col">Ciclo</th><th scope="col">Situación</th></tr></thead><tbody>
+<?php foreach ($scopedCoverage as $coverage): ?>
+<tr><td><?= e($coverage['name']) ?></td><td><?= e($coverage['audit_count']) ?></td>
+<td><?= e($coverage['last_audit_year'] ?? 'Sin registro') ?></td><td><?= e($coverage['cycle_months']) ?> meses</td>
+<td><?= e(coverageStatus($coverage,(int)date('Y'))) ?></td></tr>
 <?php endforeach; ?></tbody></table></div><?php endif; ?>
 <h3>Riesgos de mis unidades</h3>
 <?php if (!$scopedRisks): ?><p class="muted">Sin riesgos registrados dentro de las unidades autorizadas.</p><?php else: ?>
