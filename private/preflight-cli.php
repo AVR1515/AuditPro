@@ -6,12 +6,16 @@ if (PHP_SAPI!=='cli') {
 }
 require __DIR__ . '/bootstrap.php';
 require __DIR__ . '/preflight.php';
+require __DIR__ . '/reminders.php';
 try {
     $config=config();
     $checks=preflightChecks(db($config),$config);
     foreach ($checks as $item) {
         fwrite(STDOUT,($item['ok']?'[OK] ':'[FALTA] ').$item['description']."\n");
     }
+    $cron=reminderJobHealth(db($config),new DateTimeImmutable());
+    fwrite(STDOUT,"\nTAREA DIARIA: ".($cron['healthy']?'Ejecución reciente':'SIN EJECUCIÓN RECIENTE').
+        " · Último éxito ".($cron['last_success_at'] ?? 'Sin registrar')."\n");
     fwrite(STDOUT,"\nVALIDACIONES MANUALES PENDIENTES ANTES DE PRODUCCIÓN:\n");
     fwrite(STDOUT,"- HTTPS real, cabeceras y denegación HTTP de private/.\n");
     fwrite(STDOUT,"- Copia de seguridad, restauración y almacenamiento cifrado.\n");
