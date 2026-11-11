@@ -10,6 +10,7 @@ Este documento no certifica el despliegue ni reemplaza la aprobación del equipo
 - [ ] Confirmar permisos SQL mínimos, usuarios únicos y política de contraseñas.
 - [ ] Verificar los resultados de pruebas HTTP, de MySQL y sintaxis del commit instalado.
 - [ ] Registrar aprobación del responsable para el plazo de retención y cualquier eliminación irreversible.
+- [ ] Verificar solicitud y decisión de purgado por cuentas administradoras distintas; una autorización caducada o cancelada no sirve.
 - [ ] Ejecutar `php private/remind.php --dry-run`, comprobar el resumen y luego verificar la programación y bitácora real de `private/remind.php`.
 - [ ] Ejecutar `bash tests/deployment-probe.sh https://dominio/auditpro` en el servidor con certificado válido, sin desactivar TLS.
 
@@ -45,8 +46,15 @@ Este documento no certifica el despliegue ni reemplaza la aprobación del equipo
 - [ ] Confirmar que el bloqueo legal impide purgar incluso con el plazo vencido.
 - [ ] Confirmar que un archivo sin fecha de retención se conserva indefinidamente.
 - [ ] Verificar que las métricas de retención cuenten todos los archivos, incluidos bloqueos legales y purgados.
+- [ ] Confirmar que la salud del cron refleja la última ejecución correcta real y que el modo `--dry-run` no la actualiza.
 - [ ] Comprobar que un archivo purgado mantiene metadatos y bitácora pero no puede descargarse.
 - [ ] Confirmar qué ocurre con copias en respaldos y sistemas externos.
+
+## Evidencia de aceptación por rol
+
+- [ ] Los usuarios autorizados registran en **Evidencias del piloto** el resultado, la referencia al acta y el SHA completo de lo probado.
+- [ ] Un rol especializado no puede registrar una declaración reservada a otro rol.
+- [ ] Administración coteja el historial inmutable con actas, firmas y el entorno ensayado; una declaración por sí sola no habilita producción.
 
 ## Aceptación del piloto
 
