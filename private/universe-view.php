@@ -13,14 +13,14 @@ $coverageYear = (int) date('Y');
 $coverageGaps = count(array_filter($coverage,static fn(array $row): bool => coverageStatus($row,$coverageYear) !== 'Dentro del ciclo aproximado'));
 ?>
 <section><h2>Cobertura histórica por unidad</h2>
-<p class="muted">Prioriza los procesos de mayor riesgo sin auditorías vinculadas o fuera de su ciclo. El cálculo utiliza el año del último expediente enlazado a una evaluación de riesgo, no la fecha efectiva de ejecución.</p>
+<p class="muted">Prioriza los procesos de mayor riesgo sin auditorías vinculadas o fuera de su ciclo. Para expedientes cerrados después de la actualización 022 utiliza su fecha efectiva de cierre. En auditorías históricas sin cierre fechado conserva una estimación por año, señalada como aproximada.</p>
 <dl class="metrics"><div><dt>Unidades evaluables</dt><dd><?= count($coverage) ?></dd></div>
 <div><dt>Brechas de cobertura</dt><dd><?= $coverageGaps ?></dd></div></dl>
 <?php if ($coverage): ?><div class="table"><table><thead><tr>
-<th scope="col">Unidad</th><th scope="col">Riesgo actual</th><th scope="col">Última auditoría</th><th scope="col">Total vinculadas</th><th scope="col">Ciclo</th><th scope="col">Cobertura</th>
+<th scope="col">Unidad</th><th scope="col">Riesgo actual</th><th scope="col">Último cierre</th><th scope="col">Última auditoría</th><th scope="col">Total vinculadas</th><th scope="col">Ciclo</th><th scope="col">Cobertura</th>
 </tr></thead><tbody><?php foreach ($coverage as $item): ?>
 <tr><td><?= e($item['name']) ?></td><td><?= e($item['rating'] ?? 'Sin evaluación') ?></td>
-<td><?= e($item['last_audit_year'] ?? 'Sin registro') ?></td><td><?= e($item['audit_count']) ?></td>
+<td><?= e($item['last_closed_on'] ?? 'Sin fecha registrada') ?></td><td><?= e($item['last_audit_year'] ?? 'Sin registro') ?></td><td><?= e($item['audit_count']) ?></td>
 <td><?= e($item['cycle_months']) ?> meses</td><td><?= e(coverageStatus($item,$coverageYear)) ?></td></tr>
 <?php endforeach; ?></tbody></table></div><?php endif; ?>
 </section>
