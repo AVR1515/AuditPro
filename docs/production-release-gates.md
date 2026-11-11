@@ -30,6 +30,7 @@ no prueban por sí solos que AuditPro sea seguro para operar con datos reales.
 - [ ] Se prueba `php private/remind.php --dry-run` y la tarea programada real, sin avisos duplicados.
 - [ ] Administración confirma en «Preparación del lanzamiento» que el último éxito del proceso es reciente (máximo 36 horas).
 - [ ] Se verifica el tratamiento de prórrogas, acciones cerradas, escalaciones y buzones de destinatarios reales.
+- [ ] Se revisa que la prueba CLI del proceso diario con datos ficticios esté aprobada en GitHub Actions.
 
 **Evidencia requerida:** registro por rol, fecha y captura auténtica de la aplicación.
 
@@ -46,7 +47,8 @@ no prueban por sí solos que AuditPro sea seguro para operar con datos reales.
 
 - [ ] El administrador comprueba certificado TLS y las cabeceras ejecutando `bash tests/deployment-probe.sh https://dominio/auditpro`.
 - [ ] Se confirma en un navegador externo la denegación de `private/`, SQL, configuración y `.git/`.
-- [ ] Se prueba restauración íntegra desde una copia cifrada en un servidor aislado y se documenta tiempo de recuperación.
+- [ ] Se comprueba que la prueba automatizada de restauración con datos ficticios de GitHub Actions pasó para el SHA instalado.
+- [ ] Se prueba restauración íntegra desde una copia cifrada **real** en un servidor aislado y se documenta tiempo de recuperación.
 - [ ] Se prueban privilegios mínimos de la cuenta SQL, cron, logs y procedimiento de reversión.
 - [ ] No se usa `AUDITPRO_DEV=1` en la instalación de producción.
 
@@ -63,4 +65,4 @@ no prueban por sí solos que AuditPro sea seguro para operar con datos reales.
 - **Decisión:** [ ] Aprobado [ ] Rechazado [ ] Pendiente
 - **Evidencias y enlace a incidentes:** ______________________
 
-**Cualquier casilla pendiente mantiene la liberación pendiente.** Las declaraciones de la aplicación se revisan por separado junto con actas firmadas y el SHA efectivamente instalado.
+**Cualquier casilla pendiente mantiene la liberación pendiente.** La comparación de las declaraciones por SHA en «Preparación del lanzamiento» es una ayuda a la revisión y no sustituye las firmas. Las declaraciones de la aplicación se revisan por separado junto con actas firmadas y el SHA efectivamente instalado.
