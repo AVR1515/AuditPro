@@ -428,4 +428,10 @@ check((int)query($pdo,'SELECT COUNT(*) FROM compliance_policy_versions WHERE pol
  'Nueva versión conserva el historial previo');
 deny(static fn()=>saveCompliancePolicy($pdo,$supervisor,'policy_version'),
  'No crea versión adicional con otra pendiente');
+// Fixture final para las pruebas HTTP de supervisor restringido.
+query($pdo,'UPDATE users SET unit_restricted=1 WHERE id=2');
+query($pdo,'INSERT INTO supervisor_unit_grants(user_id,unit_id,granted_by) VALUES (2,?,1)
+ ON DUPLICATE KEY UPDATE granted_by=VALUES(granted_by)',[$unit]);
+check(count(scopedRiskOverview($pdo,['id'=>2,'role'=>'supervisor','unit_restricted'=>1]))===1,
+ 'Entorno HTTP usa supervisor restringido con un solo riesgo visible');
 echo "TODAS LAS PRUEBAS DE HUMO PASARON.\n";
