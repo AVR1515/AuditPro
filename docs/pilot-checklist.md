@@ -25,6 +25,7 @@ Este documento no certifica el despliegue ni reemplaza la aprobación del equipo
 - [ ] **Políticas:** redacta versión, vincula una obligación y verifica que solo otra cuenta de supervisión apruebe; comprueba que versiones aprobadas sean inmutables.
 - [ ] **Supervisor restringido:** consulta «Mis unidades y riesgos» y confirma que no aparecen riesgos de otras unidades.
 - [ ] **Supervisor restringido:** actualiza un residual y mide un KRI autorizado; confirma que IDs manipulados de otra unidad no modifican datos.
+- [ ] **Supervisor restringido:** revisa la cobertura histórica de sus unidades y verifica que la tabla no contenga unidades ajenas.
 - [ ] **Supervisor restringido:** no puede crear ni archivar indicadores globales.
 - [ ] **Riesgos:** mide KRI, revisa el riesgo residual y verifica alertas cuando hay exceso de umbral.
 
