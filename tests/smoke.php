@@ -20,6 +20,7 @@ require __DIR__ . '/../private/escalations.php';
 require __DIR__ . '/../private/recovery.php';
 require __DIR__ . '/../private/reminders.php';
 require __DIR__ . '/../private/unit-access.php';
+require __DIR__ . '/../private/scoped-overview.php';
 require __DIR__ . '/../private/overview.php';
 require __DIR__ . '/../private/retention.php';
 require __DIR__ . '/../private/preflight.php';
@@ -312,6 +313,10 @@ check(!allowedUnit($pdo,$restrictedUser,$unit),'Unidad sin permiso denegada');
 $_POST=['supervisor_id'=>'2','unit_id'=>(string)$unit];
 saveUnitGrant($pdo,$admin,'unit_grant');
 check(allowedUnit($pdo,$restrictedUser,$unit),'Grant autoriza unidad específica');
+check(count(scopedUnitOverview($pdo,$restrictedUser))===1,
+ 'Supervisor restringido solo recibe las unidades concedidas');
+check(count(scopedRiskOverview($pdo,$restrictedUser))===1,
+ 'Riesgos filtrados por unidad asignada');
 check((int)accessible($pdo,$restrictedUser,$auditId)['id']===$auditId,'Supervisor ve expediente vinculado a su unidad');
 $filtered=planRows($pdo,$restrictedUser,['year'=>'','status'=>'','risk'=>'','q'=>'']);
 check(count($filtered)===1,'Listado filtra expedientes al ámbito permitido');
@@ -325,6 +330,8 @@ query($pdo,"INSERT INTO audits(title,entity,objective,year,risk,owner_id)
 $otherAudit=(int)$pdo->lastInsertId();
 query($pdo,'INSERT INTO audit_assessment_links(audit_id,assessment_id) VALUES (?,?)',[$otherAudit,$otherAssessment]);
 deny(static fn()=>accessible($pdo,$restrictedUser,$otherAudit),'Supervisor no ve otra unidad');
+query($pdo,"INSERT INTO grc_risks(unit_id,title,owner_name,inherent,residual,appetite,treatment,review_on) VALUES (?,'Riesgo B','Área B',12,10,8,'Control',?)",[$otherUnit,date('Y-m-d',strtotime('+10 days'))]);
+check(count(scopedRiskOverview($pdo,$restrictedUser))===1,'No expone riesgos de otras unidades');
 check(count(planRows($pdo,$restrictedUser,['year'=>'','status'=>'','risk'=>'','q'=>'']))===1,
  'Listado no filtra información de otras unidades');
 $_POST=['supervisor_id'=>'2','unit_id'=>(string)$unit];
