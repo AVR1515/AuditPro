@@ -22,6 +22,7 @@ jobs:
           bash -n tests/restore-smoke.sh
           test -s docs/production-release-gates.md
           test -s docs/restore-verification.md
+          test -s docs/xampp-pilot-runbook.md
       - name: Verificar migración de solicitudes
         run: |
           test -s private/upgrade-010.sql
