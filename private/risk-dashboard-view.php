@@ -11,7 +11,13 @@ $dash=riskDashboard($pdo,(int)date('Y'));
 <div><dt>Revisiones de riesgo vencidas</dt><dd><?= e($dash['overdue_reviews']) ?></dd></div>
 <div><dt>Alertas KRI vigentes</dt><dd><?= e($dash['kri_breaches']) ?></dd></div>
 <div><dt>KRI sin medición reciente</dt><dd><?= e($dash['kri_stale']) ?></dd></div>
+<div><dt>Solicitudes de evidencia vencidas</dt><dd><?= e($dash['overdue_evidence_requests']) ?></dd></div>
+<div><dt>Respuestas de evidencia por revisar</dt><dd><?= e($dash['evidence_answers_waiting']) ?></dd></div>
+<div><dt>Revisiones de obligaciones vencidas</dt><dd><?= e($dash['overdue_compliance_reviews']) ?></dd></div>
+<div><dt>Aceptaciones de riesgo pendientes de revisión</dt><dd><?= e($dash['accepted_risks_due']) ?></dd></div>
+<div><dt>Excepciones de cumplimiento vencidas</dt><dd><?= e($dash['exceptions_due']) ?></dd></div>
 </dl>
+<p class="muted">Para actuar sobre solicitudes y vencimientos revisa <a href="index.php?view=inbox">Bandeja</a>; para obligaciones y excepciones consulta <a href="index.php?view=grc">Riesgos y cumplimiento</a>.</p>
 <details><summary>Ver unidades y brechas por prioridad</summary>
 <?php if (!$dash['coverage']): ?><p class="muted">No se han creado unidades auditables.</p><?php else: ?>
 <div class="table"><table><thead><tr>
