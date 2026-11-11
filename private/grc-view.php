@@ -3,6 +3,8 @@ $riskAccess = canRisk($user);
 $complianceAccess = canCompliance($user);
 $units = $riskAccess ? $pdo->query('SELECT id,name FROM auditable_units ORDER BY name')->fetchAll() : [];
 $risks = $riskAccess ? $pdo->query('SELECT r.*,u.name AS unit FROM grc_risks r JOIN auditable_units u ON u.id=r.unit_id ORDER BY r.review_on,r.id')->fetchAll() : [];
+$riskReviews = $riskAccess ? riskReviewHistory($pdo) : [];
+$riskKris = $riskAccess ? kriIndicators($pdo) : [];
 $controls = $pdo->query('SELECT * FROM grc_controls ORDER BY title,id')->fetchAll();
 $obligations = $complianceAccess ? $pdo->query('SELECT * FROM grc_obligations ORDER BY review_on,id')->fetchAll() : [];
 $attestations = $complianceAccess ? obligationAttestations($pdo) : [];
@@ -15,7 +17,43 @@ $mappings = grcMappings($pdo,$user);
 <article><h3><?= e($risk['title']) ?></h3><p><?= e($risk['unit']) ?> · <?= e($risk['owner_name']) ?> · Revisión <?= e($risk['review_on']) ?></p>
 <p>Inherente <?= e($risk['inherent']) ?> · Residual <?= e($risk['residual']) ?> · Apetito <?= e($risk['appetite']) ?>
 <?= $risk['residual'] > $risk['appetite'] ? ' · Sobre el apetito' : '' ?></p>
-<?php copyBlock('Tratamiento',$risk['treatment']); ?></article><?php endforeach; ?>
+<?php copyBlock('Tratamiento',$risk['treatment']); ?>
+<?php $history = $riskReviews[$risk['id']] ?? []; ?>
+<?php if ($history): ?><details><summary>Historial de revisiones (<?= count($history) ?>)</summary>
+<?php foreach ($history as $review): ?>
+<p class="copy"><?= e($review['reviewed_on']) ?> · <?= e($review['reviewer_name']) ?> · Residual <?= e($review['previous_residual']) ?> → <?= e($review['residual']) ?>/25 · Próxima <?= e($review['next_review_on']) ?> · <?= e($review['review_note']) ?></p>
+<?php endforeach; ?></details><?php endif; ?>
+<details><summary>Registrar revisión periódica</summary><?php form('risk_review',['risk_id'=>$risk['id']]); ?>
+<label>Riesgo residual<input name="residual" type="number" min="1" max="25" value="<?= e($risk['residual']) ?>" required></label>
+<label>Fecha revisada<input name="reviewed_on" type="date" max="<?= e(date('Y-m-d')) ?>" value="<?= e(date('Y-m-d')) ?>" required></label>
+<label>Próxima revisión<input name="next_review_on" type="date" min="<?= e(date('Y-m-d',strtotime('+1 day'))) ?>" required></label>
+<label>Conclusión y evidencia<textarea name="note" maxlength="12000" required></textarea></label>
+<button>Guardar revisión</button></form></details>
+<?php foreach ($riskKris[$risk['id']] ?? [] as $kri): ?>
+<article id="kri-<?= e($kri['id']) ?>">
+<h4>KRI: <?= e($kri['title']) ?></h4>
+<p>Umbral <?= $kri['direction']==='maximo' ? 'máximo' : 'mínimo' ?> <?= e($kri['threshold']) ?> <?= e($kri['unit']) ?>.
+<?php if ($kri['observed_value']===null): ?> Sin mediciones.
+<?php else: ?> Último valor <?= e($kri['observed_value']) ?> <?= e($kri['unit']) ?> · <?= e($kri['observed_on']) ?> ·
+<?= kriBreached($kri) ? 'Umbral excedido' : 'Dentro del umbral' ?><?php endif; ?></p>
+<details><summary>Registrar medición</summary><?php form('kri_measure',['risk_id'=>$risk['id'],'indicator_id'=>$kri['id']]); ?>
+<label>Valor<input name="value" type="number" min="0" step="0.001" required></label>
+<label>Fecha<input name="observed_on" type="date" max="<?= e(date('Y-m-d')) ?>" value="<?= e(date('Y-m-d')) ?>" required></label>
+<label>Referencia de evidencia<textarea name="evidence" maxlength="12000" required></textarea></label>
+<button>Guardar medición</button></form></details>
+<details><summary>Historial de mediciones</summary>
+<?php foreach (kriObservations($pdo,(int)$kri['id']) as $measurement): ?>
+<p class="copy"><?= e($measurement['observed_on']) ?> · <?= e($measurement['observed_value']) ?> <?= e($kri['unit']) ?> · <?= e($measurement['recorder_name']) ?> · <?= e($measurement['evidence_reference']) ?></p>
+<?php endforeach; ?></details>
+<?php if ($manager): ?><?php form('kri_archive',['risk_id'=>$risk['id'],'indicator_id'=>$kri['id']],true); ?><button>Archivar indicador</button></form><?php endif; ?>
+</article><?php endforeach; ?>
+<details><summary>Crear indicador KRI</summary><?php form('kri_create',['risk_id'=>$risk['id']]); ?>
+<label>Nombre<input name="title" maxlength="180" required></label>
+<label>Unidad de medida<input name="unit" maxlength="80" required></label>
+<label>Condición de alerta<select name="direction"><option value="maximo">Superior al máximo</option><option value="minimo">Inferior al mínimo</option></select></label>
+<label>Umbral<input name="threshold" type="number" min="0" step="0.001" required></label>
+<button>Crear indicador</button></form></details>
+</article><?php endforeach; ?>
 <?php if ($units): ?><details><summary>Registrar riesgo</summary><?php form('grc_risk'); ?>
 <label>Unidad<select name="unit"><?php people($units); ?></select></label>
 <label>Riesgo<input name="title" maxlength="180" required></label><label>Responsable<input name="owner_name" maxlength="180" required></label>
