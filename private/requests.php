@@ -47,7 +47,7 @@ function saveEvidenceRequest(PDO $pdo, array $user, string $op): int {
         query($pdo,"UPDATE evidence_requests SET status='abierta',closed_by=NULL,closed_at=NULL WHERE id=?",[$requestId]);
         query($pdo,'INSERT INTO evidence_request_responses(request_id,author_id,response_text,is_return) VALUES (?,?,?,TRUE)',
             [$requestId,$actor,$reason]);
-        record($pdo,$actor,$auditId,'solicitud_devuelta','Solicitud #' . $requestId . ': ' . mb_substr($reason,0,180));
+        record($pdo,$actor,$auditId,'solicitud_devuelta','Solicitud #' . $requestId . ': ' . substr($reason,0,180));
     } else {
         throw new DomainException('Operación de solicitud no autorizada.');
     }

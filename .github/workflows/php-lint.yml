@@ -1,0 +1,19 @@
+name: Verificación PHP
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+jobs:
+  php-lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Revisar sintaxis PHP
+        run: |
+          set -e
+          find . -type f -name '*.php' -print0 | xargs -0 -n1 php -l
+      - name: Verificar migración de solicitudes
+        run: |
+          test -s private/upgrade-010.sql
+          grep -q "upgrade-010.sql" public/install.php
+          grep -q "requests.php" public/index.php

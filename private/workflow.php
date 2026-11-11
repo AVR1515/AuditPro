@@ -25,7 +25,7 @@ function nextState(PDO $pdo, array $audit): ?string {
         'borrador' => 'aprobada',
         'aprobada' => 'en_campo',
         'en_campo' => query($pdo, "SELECT COUNT(*)=SUM(status='revisada') FROM tests WHERE audit_id=?", [$id])->fetchColumn() ? 'en_revision' : null,
-        'en_revision' => query($pdo, 'SELECT 1 FROM findings f JOIN tests t ON t.id=f.test_id WHERE t.audit_id=? AND NOT EXISTS (SELECT 1 FROM actions a WHERE a.finding_id=f.id) LIMIT 1', [$id])->fetchColumn() ? null : 'emitida',
+        'en_revision' => (query($pdo, 'SELECT 1 FROM findings f JOIN tests t ON t.id=f.test_id WHERE t.audit_id=? AND NOT EXISTS (SELECT 1 FROM actions a WHERE a.finding_id=f.id) LIMIT 1', [$id])->fetchColumn() || query($pdo, "SELECT 1 FROM evidence_requests WHERE audit_id=? AND status<>'cerrada' LIMIT 1", [$id])->fetchColumn()) ? null : 'emitida',
         'emitida' => query($pdo, "SELECT 1 FROM actions a JOIN findings f ON f.id=a.finding_id JOIN tests t ON t.id=f.test_id WHERE t.audit_id=? AND a.status<>'cerrada' LIMIT 1", [$id])->fetchColumn() ? null : 'cerrada',
         default => null
     };
