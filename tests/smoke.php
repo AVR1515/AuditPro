@@ -26,6 +26,7 @@ require __DIR__ . '/../private/overview.php';
 require __DIR__ . '/../private/retention.php';
 require __DIR__ . '/../private/preflight.php';
 require __DIR__ . '/../private/release-readiness.php';
+require __DIR__ . '/../private/pilot-signoffs.php';
 
 function check(bool $ok, string $message): void {
     if (!$ok) throw new RuntimeException('FALLÓ: ' . $message);
@@ -51,7 +52,7 @@ if ($pdo->query('SELECT DATABASE()')->fetchColumn() !== 'auditpro_test') {
 }
 foreach (array_merge(['schema.sql'],array_map(
     static fn(int $number): string => sprintf('upgrade-%03d.sql',$number),
-    range(2,27)
+    range(2,28)
 )) as $migration) {
     $contents = file_get_contents(__DIR__.'/../private/'.$migration);
     if ($contents === false) throw new RuntimeException('Falta '.$migration);
@@ -59,7 +60,7 @@ foreach (array_merge(['schema.sql'],array_map(
         if (trim($sql) !== '') $pdo->exec($sql);
     }
 }
-echo "Migraciones 002–027 y esquema instalados.\n";
+echo "Migraciones 002–028 y esquema instalados.\n";
 foreach (['admin','supervisor','auditor','responsable'] as $role) {
     query($pdo,'INSERT INTO users(email,name,password_hash,role) VALUES (?,?,?,?)',
         [$role.'@example.test',ucfirst($role),password_hash('TestPass123456!',PASSWORD_DEFAULT),$role]);
@@ -665,4 +666,29 @@ foreach (['riesgos','cumplimiento'] as $specialist) {
         [$specialist.'@example.test',ucfirst($specialist),
          password_hash('TestPass123456!',PASSWORD_DEFAULT),$specialist]);
 }
+
+// Evaluaciones del piloto: solo un rol autorizado puede certificar su propia comprobación.
+$testedSha=str_repeat('a',40);
+$_POST=['gate_key'=>'grc','result'=>'cumple','version_sha'=>$testedSha,
+ 'evidence_reference'=>'ACTA-GRC-01','notes'=>'Riesgos validó la matriz'];
+deny(static fn()=>savePilotGateSignoff($pdo,$admin),
+ 'Un administrador no puede declarar la revisión especializada de Riesgos');
+deny(static fn()=>savePilotGateSignoff($pdo,$auditor),
+ 'Un auditor no puede registrar declaraciones reservadas');
+query($pdo,'INSERT INTO users(email,name,password_hash,role) VALUES (?,?,?,?)',
+ ['piloto-riesgos@example.test','Evaluador Riesgos',password_hash('TestPass123456!',PASSWORD_DEFAULT),'riesgos']);
+$pilotRisk=['id'=>(int)$pdo->lastInsertId(),'role'=>'riesgos'];
+savePilotGateSignoff($pdo,$pilotRisk);
+$_POST=['gate_key'=>'grc','result'=>'no_cumple','version_sha'=>$testedSha,
+ 'evidence_reference'=>'INCIDENCIA-GRC-02','notes'=>'Debe corregirse el umbral'];
+savePilotGateSignoff($pdo,$pilotRisk);
+check((int)query($pdo,'SELECT COUNT(*) FROM pilot_gate_signoffs WHERE reviewer_id=?',[$pilotRisk['id']])->fetchColumn()===2,
+ 'Declaraciones del piloto mantienen historial inmutable de resultados diferentes');
+check(count(pilotGateHistory($pdo,$pilotRisk))===2,
+ 'Especialista consulta únicamente las declaraciones de su propia cuenta');
+check(count(pilotGateHistory($pdo,$admin))>=2,
+ 'Administración puede revisar los registros declarativos');
+$_POST['version_sha']='sha-corto';
+deny(static fn()=>savePilotGateSignoff($pdo,$pilotRisk),
+ 'La declaración exige versión SHA de 40 caracteres');
 echo "TODAS LAS PRUEBAS DE HUMO PASARON.\n";
