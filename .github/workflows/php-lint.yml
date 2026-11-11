@@ -72,3 +72,30 @@ jobs:
           AUDITPRO_TEST_USER: root
           AUDITPRO_TEST_PASSWORD: testpass
         run: php tests/smoke.php
+      - name: Probar acceso HTTP y autorizaciones de interfaz
+        env:
+          AUDITPRO_DEV: '1'
+        run: |
+          set -euo pipefail
+          cat > "$RUNNER_TEMP/auditpro-test-config.php" <<'PHP'
+          <?php
+          return [
+              'host'=>'127.0.0.1',
+              'port'=>3306,
+              'database'=>'auditpro_test',
+              'user'=>'root',
+              'password'=>'testpass',
+              'install_user'=>'',
+              'install_password'=>'',
+              'install_token'=>'',
+          ];
+          PHP
+          export AUDITPRO_CONFIG="$RUNNER_TEMP/auditpro-test-config.php"
+          php -S 127.0.0.1:8787 -t public > "$RUNNER_TEMP/auditpro-php.log" 2>&1 &
+          server_pid=$!
+          trap 'kill "$server_pid" 2>/dev/null || true' EXIT
+          for attempt in 1 2 3 4 5 6 7 8 9 10; do
+            if curl --silent --fail http://127.0.0.1:8787/index.php > /dev/null; then break; fi
+            sleep 1
+          done
+          bash tests/http-smoke.sh
