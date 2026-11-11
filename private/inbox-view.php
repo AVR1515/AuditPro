@@ -4,9 +4,9 @@ $tasks = actionInbox($pdo,$user);
 $overdue = count(array_filter($tasks,fn(array $task): bool => inboxStatus($task,$today) === 'Vencida'));
 $verification = count(array_filter($tasks,fn(array $task): bool => $task['status'] === 'en_verificacion'));
 $reminders = unreadReminders($pdo,$user);
-$escalations = manage($user) ? unreadEscalations($pdo,$user) : [];
+$escalations = manage($user) && !restrictedSupervisor($user) ? unreadEscalations($pdo,$user) : [];
 ?>
-<?php if (manage($user)): $escalationSettings=escalationPolicy($pdo); ?>
+<?php if (manage($user) && !restrictedSupervisor($user)): $escalationSettings=escalationPolicy($pdo); ?>
 <section><h2>Escalamiento de acciones vencidas</h2>
 <p class="muted">Avisos internos a supervisores y administradores después del número configurado de días de retraso; se generan con el proceso diario local, sin correos ni servicios externos.</p>
 <p>Estado: <?= (int)$escalationSettings['enabled'] ? 'Activo' : 'Desactivado' ?> · Umbral: <?= e($escalationSettings['overdue_days']) ?> días.</p>
@@ -53,7 +53,7 @@ $requestToReview = count(array_filter($requestTasks,static fn(array $request): b
 <?php foreach ($tasks as $task): ?><tr><td><a href="index.php?id=<?= e($task['audit_id']) ?>#action-<?= e($task['id']) ?>"><?= e($task['description']) ?></a></td>
 <td><?= e($task['name']) ?></td><td><?= e($task['due_date']) ?></td><td><?= e(str_replace('_',' ',$task['status'])) ?></td><td><?= e(inboxStatus($task,$today)) ?></td></tr><?php endforeach; ?>
 </tbody></table></div><?php endif; ?></section>
-<?php if (manage($user)): ?>
+<?php if (manage($user) && !restrictedSupervisor($user)): ?>
 <section><h2>Alertas de indicadores de riesgo (KRI)</h2>
 <?php $kriAlerts = breachedKriInbox($pdo); ?>
 <p class="muted">Indicadores cuyo último valor documentado está fuera del umbral. Las mediciones se conservan en Riesgos y cumplimiento.</p>
