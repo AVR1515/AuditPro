@@ -309,6 +309,10 @@ $_POST=['supervisor_id'=>'2','restricted'=>'1'];
 deny(static fn()=>saveUnitGrant($pdo,$supervisor,'unit_scope'),'Supervisor no administra sus permisos');
 saveUnitGrant($pdo,$admin,'unit_scope');
 $restrictedUser=['id'=>2,'role'=>'supervisor','unit_restricted'=>1];
+check(!canViewTemplates($restrictedUser),'Supervisor restringido no ve catálogo global de plantillas');
+$_POST=['title'=>'Plantilla no autorizada','category'=>'Global','procedure'=>'Datos ajenos'];
+deny(static fn()=>saveTemplate($pdo,$restrictedUser,'template_create'),
+ 'Supervisor restringido no modifica plantillas globales');
 deny(static fn()=>accessible($pdo,$restrictedUser,$auditId),'Supervisor restringido no accede sin concesión');
 check(!allowedUnit($pdo,$restrictedUser,$unit),'Unidad sin permiso denegada');
 $_POST=['supervisor_id'=>'2','unit_id'=>(string)$unit];
