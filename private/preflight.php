@@ -49,8 +49,13 @@ function preflightChecks(PDO $pdo, array $config): array {
     $add('install_disabled',empty($config['install_token']),'Token de instalación retirado');
     $add('temporary_install_removed',empty($config['install_user']) &&
         empty($config['install_password']),'Credenciales temporales de instalación retiradas');
-    $add('private_config',is_string(getenv('AUDITPRO_CONFIG')) &&
-        realpath((string)getenv('AUDITPRO_CONFIG'))!==false,'Archivo de configuración privado accesible');
+    $configFile=getenv('AUDITPRO_CONFIG');
+    $resolvedConfig=is_string($configFile) && $configFile!=='' ? realpath($configFile) : false;
+    $publicDir=realpath(__DIR__.'/../public');
+    $add('private_config',$resolvedConfig!==false,'Archivo de configuración privado accesible');
+    $add('private_config_location',$resolvedConfig!==false && $publicDir!==false &&
+        !str_starts_with($resolvedConfig,$publicDir.DIRECTORY_SEPARATOR),
+        'Archivo de configuración fuera del directorio público');
     return $checks;
 }
 function preflightReady(array $checks): bool {
