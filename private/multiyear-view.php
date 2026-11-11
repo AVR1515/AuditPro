@@ -4,7 +4,23 @@ $multiItems = multiyearItems($pdo);
 $multiUnits = $pdo->query('SELECT u.id,u.name FROM auditable_units u WHERE EXISTS
     (SELECT 1 FROM risk_assessments r WHERE r.unit_id=u.id) ORDER BY u.name')->fetchAll();
 $multiAuditors = $pdo->query("SELECT id,name FROM users WHERE role='auditor' AND active=1 ORDER BY name")->fetchAll();
+$forecast=multiyearForecast($pdo);
 ?>
+<section><h2>Previsión de recursos multianual</h2>
+<p class="muted">Suma compromisos de planes aprobados y deduplica cada unidad/año según la versión aprobada más reciente. No incluye borradores ni equivale a una asignación laboral definitiva.</p>
+<?php if (!$forecast): ?><p class="muted">No hay compromisos aprobados para proyectar.</p>
+<?php else: ?><div class="table"><table><thead><tr><th scope="col">Año</th><th scope="col">Auditor</th><th scope="col">Unidades</th><th scope="col">Horas previstas</th><th scope="col">Capacidad</th><th scope="col">Balance</th><th scope="col">Horas históricas registradas</th></tr></thead><tbody>
+<?php foreach ($forecast as $row):
+$available=$row['available_minutes']===null?null:(int)$row['available_minutes'];
+$forecastMinutes=(int)$row['forecast_minutes'];
+$balance=$available===null?null:$available-$forecastMinutes;
+?>
+<tr><td><?= e($row['target_year']) ?></td><td><?= e($row['auditor_name']) ?></td>
+<td><?= e($row['unit_count']) ?></td><td><?= e(displayHours($forecastMinutes)) ?></td>
+<td><?= $available===null?'Sin configurar':e(displayHours($available)) ?></td>
+<td><?= $balance===null?'Sin referencia':($balance<0?'Sobreasignación: '.e(displayHours(-$balance)):'Disponible: '.e(displayHours($balance))) ?></td>
+<td><?= e(displayHours((int)$row['actual_minutes'])) ?></td></tr>
+<?php endforeach; ?></tbody></table></div><?php endif; ?></section>
 <section><h2>Planificación multianual de auditoría</h2>
 <p class="muted">Horizonte de 2 a 5 años, prioridades basadas en la última evaluación de riesgo y aprobación independiente. Las propuestas no crean automáticamente expedientes ni sustituyen el plan anual aprobado.</p>
 <details><summary>Crear horizonte multianual</summary>
