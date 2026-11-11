@@ -20,6 +20,7 @@ require __DIR__ . '/../private/risk-acceptance.php';
 require __DIR__ . '/../private/attestations.php';
 require __DIR__ . '/../private/exceptions.php';
 require __DIR__ . '/../private/multiyear.php';
+require __DIR__ . '/../private/kri.php';
 start();
 $error = null;
 $user = null;
@@ -80,6 +81,11 @@ try {
             assess($pdo,$user,$op);
             $pdo->commit();
             redirect('index.php?view=universe');
+        }
+        if (in_array($op,KRI_OPS,true)) {
+            saveKri($pdo,$user,$op);
+            $pdo->commit();
+            redirect('index.php?view=grc');
         }
         if (in_array($op,EXCEPTION_OPS,true)) {
             saveComplianceException($pdo,$user,$op);
