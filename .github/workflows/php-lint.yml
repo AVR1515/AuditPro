@@ -25,6 +25,8 @@ jobs:
           grep -q "upgrade-017.sql" public/install.php
           grep -q "upgrade-018.sql" public/install.php
           grep -q "escalations.php" public/index.php
+          test -s private/recovery.php
+          test -s private/recover-admin.php
           grep -q "kri.php" public/index.php
           grep -q "risk-dashboard.php" public/index.php
           grep -q "multiyear.php" public/index.php
