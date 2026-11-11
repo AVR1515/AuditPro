@@ -20,6 +20,7 @@ function riskDashboard(PDO $pdo, int $year): array {
         COALESCE(SUM(review_on<CURRENT_DATE()),0) AS overdue_reviews
         FROM grc_risks')->fetch();
     $kriRows=breachedKriInbox($pdo);
+    $kriStale=staleKriInbox($pdo,new DateTimeImmutable('today'));
     return [
         'units'=>$total,'unrated'=>$missing,'gaps'=>$gaps,
         'high'=>$high,'high_gaps'=>$highGaps,
@@ -27,6 +28,7 @@ function riskDashboard(PDO $pdo, int $year): array {
         'above_appetite'=>(int)$riskRows['above_appetite'],
         'overdue_reviews'=>(int)$riskRows['overdue_reviews'],
         'kri_breaches'=>count($kriRows),
+        'kri_stale'=>count($kriStale),
         'coverage'=>$coverage,
     ];
 }
