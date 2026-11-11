@@ -76,7 +76,7 @@ function mutate(PDO $pdo, array $user, string $op): ?int {
         case 'advance':
             if (!$manager || !($next = nextState($pdo,$audit))) throw new DomainException('La transición requiere revisar pruebas o acciones pendientes.');
             $report = $next === 'emitida' ? field('report',30000) : $audit['report'];
-            query($pdo,'UPDATE audits SET status=?, report=? WHERE id=?',[$next,$report,$id]);
+            query($pdo,'UPDATE audits SET status=?, report=?, closed_on=CASE WHEN ?=\'cerrada\' THEN CURRENT_DATE() ELSE closed_on END WHERE id=?',[$next,$report,$next,$id]);
             $detail = "$state → $next";
             break;
         case 'test':
