@@ -16,6 +16,7 @@ require __DIR__ . '/../private/obligation-import.php';
 require __DIR__ . '/../private/requests.php';
 require __DIR__ . '/../private/templates.php';
 require __DIR__ . '/../private/capacity.php';
+require __DIR__ . '/../private/risk-acceptance.php';
 start();
 $error = null;
 $user = null;
@@ -110,6 +111,11 @@ try {
             $pdo->commit();
             if ($op !== 'preview_obligations') unset($_SESSION['obligation_import']);
             redirect($destination);
+        }
+        if (in_array($op,RISK_ACCEPTANCE_OPS,true)) {
+            $id = saveRiskAcceptance($pdo,$user,$op);
+            $pdo->commit();
+            redirect('index.php?id=' . $id);
         }
         if (in_array($op,TEMPLATE_OPS,true)) {
             $id = saveTemplate($pdo,$user,$op);
