@@ -22,6 +22,7 @@ require __DIR__ . '/../private/exceptions.php';
 require __DIR__ . '/../private/multiyear.php';
 require __DIR__ . '/../private/kri.php';
 require __DIR__ . '/../private/risk-dashboard.php';
+require __DIR__ . '/../private/escalations.php';
 start();
 $error = null;
 $user = null;
@@ -117,6 +118,16 @@ try {
             savePlan($pdo,$user,$op);
             $pdo->commit();
             redirect('index.php?view=plans');
+        }
+        if ($op === 'save_escalation_policy') {
+            saveEscalationPolicy($pdo,$user);
+            $pdo->commit();
+            redirect('index.php?view=inbox');
+        }
+        if ($op === 'read_escalation') {
+            readEscalation($pdo,$user,positiveId('escalation_id'));
+            $pdo->commit();
+            redirect('index.php?view=inbox');
         }
         if ($op === 'read_reminder') {
             markReminderRead($pdo,$user,positiveId('reminder'));
