@@ -13,6 +13,8 @@ require __DIR__ . '/../private/grc.php';
 require __DIR__ . '/../private/attestations.php';
 require __DIR__ . '/../private/exceptions.php';
 require __DIR__ . '/../private/multiyear.php';
+require __DIR__ . '/../private/kri.php';
+require __DIR__ . '/../private/inbox.php';
 
 function check(bool $ok, string $message): void {
     if (!$ok) throw new RuntimeException('FALLÓ: ' . $message);
@@ -38,7 +40,7 @@ if ($pdo->query('SELECT DATABASE()')->fetchColumn() !== 'auditpro_test') {
 }
 foreach (array_merge(['schema.sql'],array_map(
     static fn(int $number): string => sprintf('upgrade-%03d.sql',$number),
-    range(2,16)
+    range(2,17)
 )) as $migration) {
     $contents = file_get_contents(__DIR__.'/../private/'.$migration);
     if ($contents === false) throw new RuntimeException('Falta '.$migration);
@@ -46,7 +48,7 @@ foreach (array_merge(['schema.sql'],array_map(
         if (trim($sql) !== '') $pdo->exec($sql);
     }
 }
-echo "Migraciones 002–016 y esquema instalados.\n";
+echo "Migraciones 002–017 y esquema instalados.\n";
 foreach (['admin','supervisor','auditor','responsable'] as $role) {
     query($pdo,'INSERT INTO users(email,name,password_hash,role) VALUES (?,?,?,?)',
         [$role.'@example.test',ucfirst($role),password_hash('TestPass123456!',PASSWORD_DEFAULT),$role]);
@@ -199,4 +201,38 @@ $_POST=['plan_id'=>(string)$multiId,'unit_id'=>(string)$unit,'auditor_id'=>'3',
  'target_year'=>'2028','hours'=>'100'];
 deny(static fn()=>saveMultiyear($pdo,$supervisor,'multiyear_add'),
  'Plan aprobado es inmutable');
+
+// Riesgos periódicos e indicadores KRI, con roles y conservación de historial.
+query($pdo,'INSERT INTO grc_risks(unit_id,title,owner_name,inherent,residual,appetite,treatment,review_on)
+ VALUES (?,?,?,?,?,?,?,?)',[$unit,'Liquidez','Riesgos',20,15,10,'Monitoreo',date('Y-m-d',strtotime('+20 days'))]);
+$riskId=(int)$pdo->lastInsertId();
+$_POST=['risk_id'=>(string)$riskId,'residual'=>'12','reviewed_on'=>date('Y-m-d'),
+ 'next_review_on'=>date('Y-m-d',strtotime('+30 days')),'note'=>'Se revisaron indicadores de liquidez'];
+deny(static fn()=>saveKri($pdo,$auditor,'risk_review'),'Auditor no revisa riesgos');
+saveKri($pdo,$admin,'risk_review');
+check((int)query($pdo,'SELECT residual FROM grc_risks WHERE id=?',[$riskId])->fetchColumn()===12,
+ 'Actualiza riesgo residual');
+check((int)query($pdo,'SELECT previous_residual FROM grc_risk_reviews WHERE risk_id=?',[$riskId])->fetchColumn()===15,
+ 'Conserva revisión previa');
+$_POST=['risk_id'=>(string)$riskId,'title'=>'Indicador de mora','unit'=>'%',
+ 'direction'=>'maximo','threshold'=>'3.5'];
+saveKri($pdo,$admin,'kri_create');
+$kriId=(int)query($pdo,'SELECT id FROM grc_kri_indicators WHERE risk_id=? ORDER BY id DESC LIMIT 1',[$riskId])->fetchColumn();
+check($kriId>0,'Crea KRI con umbral');
+$_POST=['risk_id'=>(string)$riskId,'indicator_id'=>(string)$kriId,
+ 'observed_on'=>date('Y-m-d'),'value'=>'4.25','evidence'=>'Informe de cobranza'];
+deny(static fn()=>saveKri($pdo,$auditor,'kri_measure'),'Auditor no registra mediciones KRI');
+saveKri($pdo,$admin,'kri_measure');
+$kriRow=kriIndicators($pdo)[$riskId][0]??null;
+check($kriRow!==null && kriBreached($kriRow),'Detecta medición superior al máximo');
+check(count(breachedKriInbox($pdo))===1,'Alerta KRI en bandeja');
+$_POST['value']='2.8';
+saveKri($pdo,$admin,'kri_measure');
+$kriRow=kriIndicators($pdo)[$riskId][0]??null;
+check($kriRow!==null && !kriBreached($kriRow),'Alerta desaparece con la última medición válida');
+check(count(kriObservations($pdo,$kriId))===2,'Conserva historial de mediciones');
+$_POST=['risk_id'=>(string)$riskId,'indicator_id'=>(string)$kriId];
+deny(static fn()=>saveKri($pdo,$auditor,'kri_archive'),'Auditor no archiva indicadores');
+saveKri($pdo,$admin,'kri_archive');
+check(count(breachedKriInbox($pdo))===0,'Indicador archivado deja de alertar');
 echo "TODAS LAS PRUEBAS DE HUMO PASARON.\n";
