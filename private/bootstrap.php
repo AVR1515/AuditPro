@@ -98,7 +98,7 @@ function redirect(string $url = 'index.php'): never {
 function page(string $title, ?array $user = null): void { ?>
 <!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title><?= e($title) ?> · AuditPro</title><link rel="stylesheet" href="app.css"><script src="theme.js" defer></script></head>
-<body><header><a href="index.php">AuditPro</a><label>Tema <select id="theme"><option value="">Sistema</option><option value="light">Claro</option><option value="dark">Oscuro</option></select></label></header>
+<body><a class="skip-link" href="#main-content">Saltar al contenido principal</a><header><a href="index.php">AuditPro</a><label for="theme">Tema <select id="theme" aria-label="Preferencia de tema"><option value="">Sistema</option><option value="light">Claro</option><option value="dark">Oscuro</option></select></label></header>
 <?php if ($user): ?>
 <div class="shell"><aside><nav aria-label="Módulos de AuditPro">
 <p class="nav-caption">ESPACIO DE TRABAJO</p>
@@ -120,7 +120,7 @@ foreach ($sections as $key=>$label):
 <form method="post" action="index.php"><?= csrf() ?><input type="hidden" name="op" value="logout"><button>Salir</button></form></div>
 </nav></aside>
 <?php endif; ?>
-<main><h1><?= e($title) ?></h1>
+<main id="main-content" tabindex="-1"><h1><?= e($title) ?></h1>
 <?php }
 function endPage(bool $authenticated = false): void { echo '</main>' . ($authenticated ? '</div>' : '') . '</body></html>'; }
 function errorBox(?string $error): void {
