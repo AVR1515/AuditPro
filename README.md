@@ -136,7 +136,7 @@ Las aceptaciones aprobadas pueden revisarse de nuevo desde el expediente, inclus
 
 ## Comprobaciones previas al lanzamiento (sin acceso a producción)
 
-Antes de habilitar AuditPro con datos reales, sigue las [puertas de liberación](docs/production-release-gates.md) y la [guía de restauración](docs/restore-verification.md). Ninguna prueba en GitHub sustituye la revisión de los propietarios del proceso, los controles de retención y la restauración en el servidor destino. El lanzamiento se considera **pendiente** hasta que todas las puertas estén aprobadas con evidencias y versión SHA.
+Antes de habilitar AuditPro con datos reales, sigue la [guía de ejecución del piloto en XAMPP](docs/xampp-pilot-runbook.md) y las [puertas de liberación](docs/production-release-gates.md) y la [guía de restauración](docs/restore-verification.md). Ninguna prueba en GitHub sustituye la revisión de los propietarios del proceso, los controles de retención y la restauración en el servidor destino. El lanzamiento se considera **pendiente** hasta que todas las puertas estén aprobadas con evidencias y versión SHA.
 
 Para diagnosticar las tareas diarias sin generar avisos, ejecuta `php private/remind.php --dry-run`. Para verificar un despliegue HTTPS real sin enviar contraseñas: `bash tests/deployment-probe.sh https://servidor.example/auditpro`. Esta prueba comprueba la validez TLS, HSTS, CSP y el bloqueo de archivos privados. Para revisar los metadatos de conservación consulta **Retención de evidencias** como administrador. Revisa las políticas y evita purgar contenido antes de la aprobación jurídica.
 
