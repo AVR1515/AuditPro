@@ -21,6 +21,7 @@ require __DIR__ . '/../private/attestations.php';
 require __DIR__ . '/../private/exceptions.php';
 require __DIR__ . '/../private/multiyear.php';
 require __DIR__ . '/../private/kri.php';
+require __DIR__ . '/../private/risk-dashboard.php';
 start();
 $error = null;
 $user = null;
