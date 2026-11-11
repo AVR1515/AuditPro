@@ -5,6 +5,7 @@ $scopedIndicators=scopedRiskIndicators($pdo,$user);
 $scopedCoverage=scopedUnitCoverage($pdo,$user);
 $scopedControls=scopedRiskControls($pdo,$user);
 $scopedTests=scopedControlTests($pdo,$user);
+$scopedObligations=scopedObligations($pdo,$user);
 ?>
 <section><h2>Mis unidades y riesgos</h2>
 <p class="muted">Solo se muestran unidades y riesgos concedidos a tu cuenta. Puedes revisar el riesgo residual y registrar mediciones de indicadores existentes dentro de tus unidades. Crear o archivar indicadores y gestionar vínculos globales continúa reservado. Se muestra la trazabilidad de controles con pruebas exclusivamente de expedientes autorizados.</p>
@@ -16,6 +17,16 @@ $scopedTests=scopedControlTests($pdo,$user);
 <?php foreach ($scopedUnits as $unit): ?>
 <tr><td><?= e($unit['name']) ?></td><td><?= e($unit['process_name']) ?></td><td><?= e($unit['accountable']) ?></td><td><?= e($unit['cycle_months']) ?> meses</td></tr>
 <?php endforeach; ?></tbody></table></div><?php endif; ?>
+<h3>Obligaciones relacionadas con mis riesgos</h3>
+<p class="muted">Vista de solo lectura. Solo se incluyen obligaciones enlazadas a controles de riesgos pertenecientes a las unidades autorizadas; ninguna aprobación de cumplimiento se concede por este acceso.</p>
+<?php if (!$scopedObligations): ?><p class="muted">No hay obligaciones vinculadas a controles de tus unidades.</p>
+<?php else: ?><div class="table"><table><thead><tr><th scope="col">Obligación</th><th scope="col">Marco</th><th scope="col">Responsable</th><th scope="col">Próxima revisión</th></tr></thead><tbody>
+<?php foreach ($scopedObligations as $obligation): ?><tr>
+<td><?= e($obligation['title']) ?></td>
+<td><?= e($obligation['framework']) ?> / <?= e($obligation['reference_code']) ?></td>
+<td><?= e($obligation['owner_name']) ?></td>
+<td><?= e($obligation['next_review']) ?></td></tr><?php endforeach; ?>
+</tbody></table></div><?php endif; ?>
 <h3>Cobertura de auditorías por unidad</h3>
 <p class="muted">Las auditorías solo se cuentan cuando están vinculadas a una evaluación de la unidad. El ciclo se estima por años y no sustituye las fechas efectivas de trabajo.</p>
 <?php if ($scopedCoverage): ?>
