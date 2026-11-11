@@ -102,7 +102,7 @@ Administración configura por archivo fechas de conservación (mínimo 365 días
 
 ## Preparación del piloto (fase 3)
 
-Ejecuta `php private/preflight-cli.php` desde el servidor configurado con `AUDITPRO_CONFIG`. Este comando no modifica la base de datos ni imprime contraseñas: comprueba PHP/extensiones, conexión, instalación, esquema hasta `upgrade-021.sql`, credenciales temporales deshabilitadas y configuración de aplicación. Un diagnóstico exitoso **no significa que el sistema esté aprobado para producción**. Completa los escenarios del archivo [docs/pilot-checklist.md](docs/pilot-checklist.md), validación de HTTPS, restauración real, accesibilidad y controles de autorización con usuarios reales.
+Ejecuta `php private/preflight-cli.php` desde el servidor configurado con `AUDITPRO_CONFIG`. Este comando no modifica la base de datos ni imprime contraseñas: comprueba PHP/extensiones, conexión, instalación, esquema hasta `upgrade-024.sql`, credenciales temporales deshabilitadas y configuración de aplicación. Un diagnóstico exitoso **no significa que el sistema esté aprobado para producción**. Completa los escenarios del archivo [docs/pilot-checklist.md](docs/pilot-checklist.md), validación de HTTPS, restauración real, accesibilidad y controles de autorización con usuarios reales.
 
 ## Políticas de cumplimiento versionadas (upgrade-021)
 
@@ -115,6 +115,20 @@ Los supervisores con alcance restringido disponen de **Mis unidades y riesgos**,
 ## Pruebas HTTP de acceso (integración continua)
 
 Además de las pruebas de integración con MySQL, GitHub Actions inicia un servidor PHP temporal con una base `auditpro_test` y verifica la pantalla de inicio de sesión, el login de un auditor, la denegación de vistas administrativas, la protección CSRF y la imposibilidad de descargar SQL privados desde la raíz pública. El entorno de prueba utiliza exclusivamente datos ficticios y se destruye al finalizar. Esto no reemplaza la revisión de accesibilidad ni un piloto en el servidor de cliente.
+
+## Ampliaciones verificables de siete fases (migraciones 022–024)
+
+**Cobertura y plan anual (022):** las auditorías que pasan por el cierre normal registran `closed_on`. El cálculo de cobertura utiliza esa fecha y el ciclo mensual real; para auditorías históricas sin cierre fechado identifica explícitamente que el resultado es aproximado. Supervisores restringidos pueden consultar un plan operativo de solo lectura con las horas de sus expedientes, sin ver unidades ajenas.
+
+**Solicitudes de evidencia (023):** el auditor puede vincular una evidencia de prueba existente del mismo expediente a su respuesta. La verificación de pertenencia se hace al guardar; el enlace conserva el historial aun cuando el archivo se haya purgado (sin permitir descargar contenido eliminado).
+
+**KRI y tablero (024):** cada indicador tiene un intervalo máximo de medición (1–365 días, predeterminado 90). Las mediciones caducas o inexistentes activan alertas de supervisión. El tablero ejecutivo agrega solicitudes vencidas, respuestas pendientes de revisión, obligaciones vencidas, riesgos aceptados pendientes de revisión y excepciones de cumplimiento vencidas.
+
+**Cumplimiento por unidad:** el supervisor restringido solo ve, en modo lectura, obligaciones enlazadas a controles de los riesgos de sus unidades. No recibe permisos globales de atestación ni aprobación.
+
+**Previsión multianual:** la vista consolida los planes aprobados, elimina duplicados de unidad/año tomando el plan aprobado más reciente y muestra carga versus capacidad por auditor. Las estimaciones no sustituyen la aprobación de recursos.
+
+Antes de actualizar una instalación existente, realiza una copia de seguridad y aplica `private/upgrade-022.sql`, `private/upgrade-023.sql` y `private/upgrade-024.sql` en orden. Otorga SELECT/UPDATE para `audits.closed_on`, SELECT/INSERT para `evidence_request_attachments` y SELECT/UPDATE para `grc_kri_indicators.review_interval_days`. Ejecuta el diagnóstico de preflight y prueba los roles antes del piloto.
 
 ## XAMPP en localhost
 
