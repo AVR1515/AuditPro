@@ -594,6 +594,13 @@ $release=releaseReadiness($pdo,[
 check($release['preflight_ready'] && isset($release['scheduler']['successful_runs']),
  'Dashboard de salida refleja controles reales sin aprobar el piloto externo');
 
+putenv('AUDITPRO_CONFIG='.__DIR__.'/../public/index.php');
+$unsafeConfig=preflightChecks($pdo,[
+ 'user'=>'test_runner','password'=>'fake_local_only',
+ 'install_user'=>'','install_password'=>'','install_token'=>''
+]);
+check(!preflightReady($unsafeConfig),
+ 'Preflight rechaza configuración situada dentro de la raíz pública');
 putenv('AUDITPRO_CONFIG');
 
 // Políticas: roles, obligaciones, segregación de aprobación y versiones inmutables.
