@@ -50,6 +50,10 @@ La vista **Universo auditable** incluye una tabla de cobertura histórica por un
 
 En **Plan anual**, supervisión puede registrar las horas disponibles de cada auditor por año, consultar las horas planificadas y ejecutadas de sus expedientes y detectar sobreasignaciones. Un valor de capacidad no registrado se muestra como **Sin configurar**, nunca como cero. El balance no bloquea la planificación; es una alerta para revisión. Ejecuta `private/upgrade-012.sql` después de la migración 011 y otorga SELECT, INSERT y UPDATE sobre `auditor_capacity`. Para instalaciones nuevas el instalador incluye la migración.
 
+## Pruebas automatizadas
+
+El workflow de GitHub Actions ejecuta comprobaciones de sintaxis PHP y pruebas de humo con MySQL 8 temporal sobre los flujos de plantillas, solicitudes, autorizaciones, capacidad y cobertura. El script de pruebas `tests/smoke.php` usa exclusivamente la base de prueba indicada por `AUDITPRO_TEST_DSN`; no debe dirigirse a la base de producción.
+
 ## XAMPP en localhost
 
 Si el proyecto completo está en `C:/xampp/htdocs/auditpro`, abre `http://localhost/auditpro/`. Apache redirige a `public/`. Los archivos `.htaccess` incluidos requieren `AllowOverride All` y bloquean el listado de carpetas, `private/` y los metadatos de Git. Conserva estos archivos al copiar o descomprimir el proyecto.

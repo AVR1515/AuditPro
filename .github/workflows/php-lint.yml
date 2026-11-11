@@ -21,3 +21,30 @@ jobs:
           grep -q "capacity.php" public/index.php
           grep -q "templates.php" public/index.php
           grep -q "requests.php" public/index.php
+  mysql-smoke:
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: testpass
+          MYSQL_DATABASE: auditpro_test
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h localhost -ptestpass"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: pdo_mysql
+      - name: Verificar flujos con MySQL temporal
+        env:
+          AUDITPRO_TEST_DSN: mysql:host=127.0.0.1;port=3306;dbname=auditpro_test;charset=utf8mb4
+          AUDITPRO_TEST_USER: root
+          AUDITPRO_TEST_PASSWORD: testpass
+        run: php tests/smoke.php
