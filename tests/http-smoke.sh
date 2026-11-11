@@ -41,6 +41,11 @@ if grep -q 'Retención de evidencias' "$tmp/blocked-retention.html"; then
   echo 'ERROR: acceso de auditor a retención' >&2
   exit 1
 fi
+curl --fail --silent --show-error -b "$cookies" "$BASE_URL/index.php?view=readiness" > "$tmp/blocked-readiness.html"
+if grep -q 'Preparación para el piloto y producción' "$tmp/blocked-readiness.html"; then
+  echo 'ERROR: acceso de auditor al diagnóstico de lanzamiento' >&2
+  exit 1
+fi
 
 # Sesión independiente de un supervisor limitado a una unidad.
 supervisorCookies="$tmp/supervisor-cookies.txt"
