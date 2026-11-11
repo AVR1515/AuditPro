@@ -74,3 +74,14 @@ function multiyearItems(PDO $pdo): array {
         $items[$row['plan_id']][]=$row;
     return $items;
 }
+
+/** Carga propuesta por auditor/año dentro de un horizonte; no mezcla planes diferentes. */
+function multiyearLoad(PDO $pdo, int $planId): array {
+    $result=[];
+    foreach (query($pdo,'SELECT i.auditor_id,i.target_year,SUM(i.estimated_minutes) AS planned_minutes,
+        c.available_minutes FROM multiyear_plan_items i LEFT JOIN auditor_capacity c
+        ON c.user_id=i.auditor_id AND c.plan_year=i.target_year
+        WHERE i.plan_id=? GROUP BY i.auditor_id,i.target_year,c.available_minutes',[$planId]) as $row)
+        $result[$row['auditor_id'].':'.$row['target_year']]=$row;
+    return $result;
+}
