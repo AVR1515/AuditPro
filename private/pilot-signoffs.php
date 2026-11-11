@@ -54,3 +54,33 @@ function pilotGateHistory(PDO $pdo,array $user): array {
         ORDER BY s.id DESC LIMIT 200',
         $global?[]:[(int)$user['id']])->fetchAll();
 }
+
+/**
+ * Estado declarativo por versión exacta: usa la última declaración de cada
+ * par (control, rol). Nunca devuelve una autorización automática de salida.
+ */
+function pilotGateCoverage(PDO $pdo,string $sha): array {
+    if (!preg_match('/^[a-f0-9]{40}$/D',$sha))
+        throw new DomainException('Indica el SHA completo y válido de la versión instalada.');
+    $rows=query($pdo,'SELECT gate_key,reviewer_role,result,id FROM pilot_gate_signoffs
+        WHERE version_sha=? ORDER BY id DESC',[$sha])->fetchAll();
+    $latest=[];
+    foreach ($rows as $row) {
+        $key=$row['gate_key'].':'.$row['reviewer_role'];
+        if (!isset($latest[$key])) $latest[$key]=$row;
+    }
+    $required=0;
+    $conforming=0;
+    $pending=[];
+    foreach (PILOT_GATES as $gate=>$roles) {
+        foreach ($roles as $role) {
+            $required++;
+            $entry=$latest[$gate.':'.$role] ?? null;
+            if ($entry && $entry['result']==='cumple') $conforming++;
+            else $pending[]=['gate'=>$gate,'role'=>$role,
+                'status'=>$entry ? 'no_cumple' : 'sin_declaracion'];
+        }
+    }
+    return ['version_sha'=>$sha,'required'=>$required,
+        'conforming'=>$conforming,'pending'=>$pending];
+}
