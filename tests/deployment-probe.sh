@@ -27,7 +27,7 @@ check_header 'x-frame-options'
 check_header 'cache-control'
 
 for path in 'private/schema.sql' 'private/config.example.php' \
-  'private/upgrade-025.sql' '.git/config'; do
+  'private/upgrade-028.sql' 'private/recovery.php' '.git/config'; do
   status="$(curl --silent --show-error --max-time 15 \
     --output /dev/null --write-out '%{http_code}' "$BASE/$path")"
   if [[ "$status" != 403 && "$status" != 404 ]]; then
