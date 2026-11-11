@@ -21,6 +21,7 @@ require __DIR__ . '/../private/recovery.php';
 require __DIR__ . '/../private/reminders.php';
 require __DIR__ . '/../private/unit-access.php';
 require __DIR__ . '/../private/scoped-overview.php';
+require __DIR__ . '/../private/policies.php';
 require __DIR__ . '/../private/overview.php';
 require __DIR__ . '/../private/retention.php';
 require __DIR__ . '/../private/preflight.php';
@@ -49,7 +50,7 @@ if ($pdo->query('SELECT DATABASE()')->fetchColumn() !== 'auditpro_test') {
 }
 foreach (array_merge(['schema.sql'],array_map(
     static fn(int $number): string => sprintf('upgrade-%03d.sql',$number),
-    range(2,20)
+    range(2,21)
 )) as $migration) {
     $contents = file_get_contents(__DIR__.'/../private/'.$migration);
     if ($contents === false) throw new RuntimeException('Falta '.$migration);
@@ -57,7 +58,7 @@ foreach (array_merge(['schema.sql'],array_map(
         if (trim($sql) !== '') $pdo->exec($sql);
     }
 }
-echo "Migraciones 002–020 y esquema instalados.\n";
+echo "Migraciones 002–021 y esquema instalados.\n";
 foreach (['admin','supervisor','auditor','responsable'] as $role) {
     query($pdo,'INSERT INTO users(email,name,password_hash,role) VALUES (?,?,?,?)',
         [$role.'@example.test',ucfirst($role),password_hash('TestPass123456!',PASSWORD_DEFAULT),$role]);
@@ -392,4 +393,35 @@ $missing=preflightChecks($pdo,[
 ]);
 check(!preflightReady($missing),'Preflight detecta instalador no deshabilitado');
 putenv('AUDITPRO_CONFIG');
+
+// Políticas: roles, obligaciones, segregación de aprobación y versiones inmutables.
+$_POST=['title'=>'Política de conciliaciones','owner_name'=>'Cumplimiento'];
+deny(static fn()=>saveCompliancePolicy($pdo,$auditor,'policy_create'),'Auditor no crea políticas');
+saveCompliancePolicy($pdo,$supervisor,'policy_create');
+$policyId=(int)query($pdo,'SELECT MAX(id) FROM compliance_policies')->fetchColumn();
+check($policyId>0,'Política registrada');
+$_POST=['policy_id'=>(string)$policyId,'policy_text'=>'Procedimiento de validación',
+ 'rationale'=>'Primera edición','effective_on'=>date('Y-m-d',strtotime('+10 days'))];
+saveCompliancePolicy($pdo,$supervisor,'policy_version');
+$versionId=(int)query($pdo,'SELECT MAX(id) FROM compliance_policy_versions WHERE policy_id=?',[$policyId])->fetchColumn();
+$_POST=['policy_id'=>(string)$policyId,'version_id'=>(string)$versionId];
+deny(static fn()=>saveCompliancePolicy($pdo,$supervisor,'policy_approve'),'El autor no aprueba su versión');
+deny(static fn()=>saveCompliancePolicy($pdo,$admin,'policy_approve'),'Sin obligación no se permite aprobar');
+$_POST=['policy_id'=>(string)$policyId,'version_id'=>(string)$versionId,'obligation_id'=>(string)$obligationId];
+saveCompliancePolicy($pdo,$supervisor,'policy_link');
+$_POST=['policy_id'=>(string)$policyId,'version_id'=>(string)$versionId];
+saveCompliancePolicy($pdo,$admin,'policy_approve');
+$approved=query($pdo,'SELECT approved_by,policy_text FROM compliance_policy_versions WHERE id=?',[$versionId])->fetch();
+check((int)$approved['approved_by']===1 && $approved['policy_text']==='Procedimiento de validación',
+ 'La versión conserva texto y aprobación independiente');
+$_POST=['policy_id'=>(string)$policyId,'version_id'=>(string)$versionId,'obligation_id'=>(string)$obligationId];
+deny(static fn()=>saveCompliancePolicy($pdo,$supervisor,'policy_link'),
+ 'Versión aprobada impide modificar vínculos');
+$_POST=['policy_id'=>(string)$policyId,'policy_text'=>'Nueva edición',
+ 'rationale'=>'Actualización','effective_on'=>date('Y-m-d',strtotime('+20 days'))];
+saveCompliancePolicy($pdo,$supervisor,'policy_version');
+check((int)query($pdo,'SELECT COUNT(*) FROM compliance_policy_versions WHERE policy_id=?',[$policyId])->fetchColumn()===2,
+ 'Nueva versión conserva el historial previo');
+deny(static fn()=>saveCompliancePolicy($pdo,$supervisor,'policy_version'),
+ 'No crea versión adicional con otra pendiente');
 echo "TODAS LAS PRUEBAS DE HUMO PASARON.\n";
