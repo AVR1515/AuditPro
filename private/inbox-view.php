@@ -36,6 +36,17 @@ $requestToReview = count(array_filter($requestTasks,static fn(array $request): b
 <td><?= e($task['name']) ?></td><td><?= e($task['due_date']) ?></td><td><?= e(str_replace('_',' ',$task['status'])) ?></td><td><?= e(inboxStatus($task,$today)) ?></td></tr><?php endforeach; ?>
 </tbody></table></div><?php endif; ?></section>
 <?php if (manage($user)): ?>
+<section><h2>Alertas de indicadores de riesgo (KRI)</h2>
+<?php $kriAlerts = breachedKriInbox($pdo); ?>
+<p class="muted">Indicadores cuyo último valor documentado está fuera del umbral. Las mediciones se conservan en Riesgos y cumplimiento.</p>
+<?php if (!$kriAlerts): ?><p class="muted">Sin umbrales excedidos en la última medición.</p><?php else: ?>
+<dl class="metrics"><div><dt>Indicadores fuera de umbral</dt><dd><?= count($kriAlerts) ?></dd></div></dl>
+<div class="table"><table><thead><tr><th scope="col">Indicador</th><th scope="col">Riesgo</th><th scope="col">Valor</th><th scope="col">Umbral</th><th scope="col">Fecha</th></tr></thead><tbody>
+<?php foreach ($kriAlerts as $alert): ?>
+<tr><td><a href="index.php?view=grc#kri-<?= e($alert['id']) ?>"><?= e($alert['title']) ?></a></td>
+<td><?= e($alert['risk_title']) ?></td><td><?= e($alert['observed_value']) ?> <?= e($alert['unit']) ?></td>
+<td><?= e($alert['direction']==='maximo' ? 'Máximo' : 'Mínimo') ?> <?= e($alert['threshold']) ?></td>
+<td><?= e($alert['observed_on']) ?></td></tr><?php endforeach; ?></tbody></table></div><?php endif; ?></section>
 <section><h2>Revisión de riesgos aceptados</h2>
 <?php $acceptedDue = riskAcceptanceDue($pdo,$today); ?>
 <p class="muted">Incluye riesgos aceptados vencidos o próximos a revisión en 30 días, incluso si la auditoría está cerrada.</p>
