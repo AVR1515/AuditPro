@@ -16,6 +16,8 @@ require __DIR__ . '/../private/multiyear.php';
 require __DIR__ . '/../private/kri.php';
 require __DIR__ . '/../private/inbox.php';
 require __DIR__ . '/../private/risk-dashboard.php';
+require __DIR__ . '/../private/escalations.php';
+require __DIR__ . '/../private/reminders.php';
 
 function check(bool $ok, string $message): void {
     if (!$ok) throw new RuntimeException('FALLÓ: ' . $message);
@@ -41,7 +43,7 @@ if ($pdo->query('SELECT DATABASE()')->fetchColumn() !== 'auditpro_test') {
 }
 foreach (array_merge(['schema.sql'],array_map(
     static fn(int $number): string => sprintf('upgrade-%03d.sql',$number),
-    range(2,17)
+    range(2,18)
 )) as $migration) {
     $contents = file_get_contents(__DIR__.'/../private/'.$migration);
     if ($contents === false) throw new RuntimeException('Falta '.$migration);
@@ -49,7 +51,7 @@ foreach (array_merge(['schema.sql'],array_map(
         if (trim($sql) !== '') $pdo->exec($sql);
     }
 }
-echo "Migraciones 002–017 y esquema instalados.\n";
+echo "Migraciones 002–018 y esquema instalados.\n";
 foreach (['admin','supervisor','auditor','responsable'] as $role) {
     query($pdo,'INSERT INTO users(email,name,password_hash,role) VALUES (?,?,?,?)',
         [$role.'@example.test',ucfirst($role),password_hash('TestPass123456!',PASSWORD_DEFAULT),$role]);
@@ -242,4 +244,36 @@ check($dashboard['units']===1 && $dashboard['risks']===1,'Tablero cuenta unidade
 check($dashboard['above_appetite']===1,'Tablero reconoce riesgo por encima del apetito');
 check($dashboard['kri_breaches']===0,'Tablero excluye indicadores archivados');
 check($dashboard['gaps']===0,'Tablero no marca brecha en auditoría del año actual');
+
+// Escalamiento por días: política administrativa, idempotencia, cierre y prórroga.
+$today=new DateTimeImmutable('today');
+check((int)escalationPolicy($pdo)['enabled']===0,'Escalamiento comienza desactivado');
+$_POST=['enabled'=>'1','overdue_days'=>'3'];
+deny(static fn()=>saveEscalationPolicy($pdo,$supervisor),
+ 'Solo administración configura el escalamiento');
+saveEscalationPolicy($pdo,$admin);
+check((int)escalationPolicy($pdo)['overdue_days']===3,'Umbral administrativo actualizado');
+query($pdo,"UPDATE audits SET status='emitida' WHERE id=?",[$auditId]);
+query($pdo,"UPDATE actions SET status='abierta',due_date=? WHERE id=?",
+ [$today->modify('-5 days')->format('Y-m-d'),$actionId]);
+generateEscalations($pdo,$today);
+generateEscalations($pdo,$today);
+$count=(int)query($pdo,'SELECT COUNT(*) FROM action_escalations WHERE action_id=?',[$actionId])->fetchColumn();
+check($count===2,'Escalamiento idempotente para administrador y supervisor');
+check(count(unreadEscalations($pdo,$supervisor))===1,'Supervisión recibe su aviso');
+check(count(unreadEscalations($pdo,$responsable))===0,'Responsable no ve escalaciones de supervisión');
+$noticeId=(int)unreadEscalations($pdo,$supervisor)[0]['id'];
+deny(static fn()=>readEscalation($pdo,$responsable,$noticeId),
+ 'Responsable no marca escalaciones como leídas');
+readEscalation($pdo,$supervisor,$noticeId);
+check(count(unreadEscalations($pdo,$supervisor))===0,'Aviso marcado como leído');
+query($pdo,'UPDATE actions SET due_date=? WHERE id=?',[$today->modify('+10 days')->format('Y-m-d'),$actionId]);
+check(count(unreadEscalations($pdo,$admin))===0,'Prórroga oculta avisos del vencimiento anterior');
+query($pdo,"UPDATE actions SET status='cerrada' WHERE id=?",[$actionId]);
+generateEscalations($pdo,$today);
+check((int)query($pdo,'SELECT COUNT(*) FROM action_escalations WHERE action_id=?',[$actionId])->fetchColumn()===2,
+ 'Acciones cerradas no crean nuevas escalaciones');
+$_POST=['enabled'=>'0','overdue_days'=>'3'];
+saveEscalationPolicy($pdo,$admin);
+check((int)escalationPolicy($pdo)['enabled']===0,'Administración desactiva el escalamiento');
 echo "TODAS LAS PRUEBAS DE HUMO PASARON.\n";
