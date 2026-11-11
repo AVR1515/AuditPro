@@ -110,7 +110,7 @@ El módulo **Políticas** permite a Cumplimiento y Supervisión crear políticas
 
 ## Consulta de riesgos para supervisores por unidad
 
-Los supervisores con alcance restringido disponen de **Mis unidades y riesgos**, una vista de solo lectura que muestra exclusivamente unidades concedidas y sus riesgos residuales/apetito. Continúan bloqueados los paneles de obligaciones, controles, políticas, planificación general y retención que no admiten aún un filtro equivalente. También queda bloqueado el catálogo global de plantillas para estos supervisores. La prueba de integración verifica que un riesgo de otra unidad no se filtre accidentalmente.
+Los supervisores con alcance restringido disponen de **Mis unidades y riesgos**, que muestra exclusivamente unidades concedidas y sus riesgos residuales/apetito. Desde esta vista pueden registrar revisiones del riesgo residual y mediciones de KRI previamente definidos en esas unidades, con trazabilidad y evidencia. La autorización se vuelve a comprobar al guardar, incluso si el formulario fue manipulado. Continúan bloqueados los paneles de obligaciones, controles, políticas, planificación general y retención que no admiten aún un filtro equivalente. Los supervisores restringidos tampoco pueden crear o archivar indicadores KRI. También queda bloqueado el catálogo global de plantillas para estos supervisores. La prueba de integración verifica que un riesgo de otra unidad no se filtre accidentalmente.
 
 ## Pruebas HTTP de acceso (integración continua)
 
