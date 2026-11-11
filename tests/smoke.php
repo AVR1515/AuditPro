@@ -50,7 +50,7 @@ if ($pdo->query('SELECT DATABASE()')->fetchColumn() !== 'auditpro_test') {
 }
 foreach (array_merge(['schema.sql'],array_map(
     static fn(int $number): string => sprintf('upgrade-%03d.sql',$number),
-    range(2,21)
+    range(2,22)
 )) as $migration) {
     $contents = file_get_contents(__DIR__.'/../private/'.$migration);
     if ($contents === false) throw new RuntimeException('Falta '.$migration);
@@ -58,7 +58,7 @@ foreach (array_merge(['schema.sql'],array_map(
         if (trim($sql) !== '') $pdo->exec($sql);
     }
 }
-echo "Migraciones 002–021 y esquema instalados.\n";
+echo "Migraciones 002–022 y esquema instalados.\n";
 foreach (['admin','supervisor','auditor','responsable'] as $role) {
     query($pdo,'INSERT INTO users(email,name,password_hash,role) VALUES (?,?,?,?)',
         [$role.'@example.test',ucfirst($role),password_hash('TestPass123456!',PASSWORD_DEFAULT),$role]);
@@ -116,6 +116,13 @@ $assessment=(int)$pdo->lastInsertId();
 query($pdo,'INSERT INTO audit_assessment_links(audit_id,assessment_id) VALUES (?,?)',[$auditId,$assessment]);
 $coverage=unitCoverage($pdo);
 check(count($coverage)===1 && (int)$coverage[0]['audit_count']===1,'Cobertura histórica por unidad vinculada');
+check(coverageStatus(['last_closed_on'=>date('Y-m-d',strtotime('-100 days')),'cycle_months'=>12,'last_audit_year'=>2024],(int)date('Y'))==='Dentro del ciclo verificado',
+ 'El ciclo usa la fecha de cierre efectiva, no solo el año');
+check(coverageStatus(['last_closed_on'=>date('Y-m-d',strtotime('-14 months')),'cycle_months'=>12,'last_audit_year'=>(int)date('Y')],(int)date('Y'))==='Revisión de cobertura requerida',
+ 'Fecha exacta vencida genera brecha incluso con año nominal reciente');
+check(str_contains(coverageStatus(['last_closed_on'=>null,'cycle_months'=>12,'last_audit_year'=>(int)date('Y')],(int)date('Y')),'aproximado'),
+ 'Históricos sin fecha se muestran como aproximación');
+
 
 // Riesgo residual: solicitud, independencia y aprobación rastreable.
 query($pdo,"INSERT INTO findings(test_id,title,severity,criterion,condition_text,cause,effect,recommendation)
