@@ -35,7 +35,7 @@ $mappings = grcMappings($pdo,$user);
 <p>Umbral <?= $kri['direction']==='maximo' ? 'máximo' : 'mínimo' ?> <?= e($kri['threshold']) ?> <?= e($kri['unit']) ?>.
 <?php if ($kri['observed_value']===null): ?> Sin mediciones.
 <?php else: ?> Último valor <?= e($kri['observed_value']) ?> <?= e($kri['unit']) ?> · <?= e($kri['observed_on']) ?> ·
-<?= kriBreached($kri) ? 'Umbral excedido' : 'Dentro del umbral' ?><?php endif; ?></p>
+<?= kriBreached($kri) ? 'Umbral excedido' : 'Dentro del umbral' ?><?= kriStale($kri,new DateTimeImmutable('today')) ? ' · Medición desactualizada' : '' ?><?php endif; ?></p>
 <details><summary>Registrar medición</summary><?php form('kri_measure',['risk_id'=>$risk['id'],'indicator_id'=>$kri['id']]); ?>
 <label>Valor<input name="value" type="number" min="0" step="0.001" required></label>
 <label>Fecha<input name="observed_on" type="date" max="<?= e(date('Y-m-d')) ?>" value="<?= e(date('Y-m-d')) ?>" required></label>
@@ -52,6 +52,7 @@ $mappings = grcMappings($pdo,$user);
 <label>Unidad de medida<input name="unit" maxlength="80" required></label>
 <label>Condición de alerta<select name="direction"><option value="maximo">Superior al máximo</option><option value="minimo">Inferior al mínimo</option></select></label>
 <label>Umbral<input name="threshold" type="number" min="0" step="0.001" required></label>
+<label>Frecuencia máxima de medición (días)<input name="review_interval_days" type="number" min="1" max="365" value="90" required></label>
 <button>Crear indicador</button></form></details>
 </article><?php endforeach; ?>
 <?php if ($units): ?><details><summary>Registrar riesgo</summary><?php form('grc_risk'); ?>
