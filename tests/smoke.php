@@ -20,6 +20,8 @@ require __DIR__ . '/../private/escalations.php';
 require __DIR__ . '/../private/recovery.php';
 require __DIR__ . '/../private/reminders.php';
 require __DIR__ . '/../private/unit-access.php';
+require __DIR__ . '/../private/overview.php';
+require __DIR__ . '/../private/retention.php';
 
 function check(bool $ok, string $message): void {
     if (!$ok) throw new RuntimeException('FALLÓ: ' . $message);
@@ -45,7 +47,7 @@ if ($pdo->query('SELECT DATABASE()')->fetchColumn() !== 'auditpro_test') {
 }
 foreach (array_merge(['schema.sql'],array_map(
     static fn(int $number): string => sprintf('upgrade-%03d.sql',$number),
-    range(2,19)
+    range(2,20)
 )) as $migration) {
     $contents = file_get_contents(__DIR__.'/../private/'.$migration);
     if ($contents === false) throw new RuntimeException('Falta '.$migration);
@@ -53,7 +55,7 @@ foreach (array_merge(['schema.sql'],array_map(
         if (trim($sql) !== '') $pdo->exec($sql);
     }
 }
-echo "Migraciones 002–019 y esquema instalados.\n";
+echo "Migraciones 002–020 y esquema instalados.\n";
 foreach (['admin','supervisor','auditor','responsable'] as $role) {
     query($pdo,'INSERT INTO users(email,name,password_hash,role) VALUES (?,?,?,?)',
         [$role.'@example.test',ucfirst($role),password_hash('TestPass123456!',PASSWORD_DEFAULT),$role]);
@@ -331,4 +333,38 @@ $_POST=['supervisor_id'=>'2','restricted'=>'0'];
 saveUnitGrant($pdo,$admin,'unit_scope');
 check(allowedAudit($pdo,['id'=>2,'role'=>'supervisor','unit_restricted'=>0],$otherAudit),
  'Desactivar restricción recupera acceso global del supervisor');
+
+// Conservación legal, elegibilidad de purga y protección frente a usuarios sin permiso.
+$queryDate=(new DateTimeImmutable('today'))->modify('+400 days')->format('Y-m-d');
+query($pdo,"INSERT INTO attachments(test_id,uploaded_by,filename,mime,bytes,sha256,content)
+ VALUES (?,?,'prueba.txt','text/plain',5,?,?)",
+ [$test['id'],3,hash('sha256','ABCDE'),'ABCDE']);
+$evidenceId=(int)$pdo->lastInsertId();
+$_POST=['attachment_id'=>(string)$evidenceId,'retention_until'=>$queryDate,'legal_hold'=>'1'];
+deny(static fn()=>saveRetention($pdo,$supervisor,'retention_set'),'Supervisor no cambia retención');
+saveRetention($pdo,$admin,'retention_set');
+check((int)query($pdo,'SELECT legal_hold FROM attachments WHERE id=?',[$evidenceId])->fetchColumn()===1,
+ 'Bloqueo legal de evidencia registrado');
+$_POST=['attachment_id'=>(string)$evidenceId,'confirmation'=>'PURGAR'];
+deny(static fn()=>saveRetention($pdo,$admin,'retention_purge'),'Bloqueo legal impide purgar');
+check(query($pdo,'SELECT content FROM attachments WHERE id=?',[$evidenceId])->fetchColumn()==='ABCDE',
+ 'Purgado denegado conserva el archivo');
+$_POST=['attachment_id'=>(string)$evidenceId,'retention_until'=>$queryDate,'legal_hold'=>'0'];
+saveRetention($pdo,$admin,'retention_set');
+$_POST=['attachment_id'=>(string)$evidenceId,'confirmation'=>'PURGAR'];
+deny(static fn()=>saveRetention($pdo,$admin,'retention_purge'),'Plazo no vencido impide purgar');
+check(query($pdo,'SELECT content FROM attachments WHERE id=?',[$evidenceId])->fetchColumn()==='ABCDE',
+ 'La evidencia se conserva hasta que expire el plazo');
+// Simular evidencia antigua permite comprobar el purgado sin alterar el reloj del servidor.
+query($pdo,"UPDATE attachments SET created_at='2024-01-01 00:00:00',
+ retention_until='2025-01-15' WHERE id=?",[$evidenceId]);
+query($pdo,"UPDATE audits SET status='cerrada' WHERE id=?",[$auditId]);
+saveRetention($pdo,$admin,'retention_purge');
+check(query($pdo,'SELECT content FROM attachments WHERE id=?',[$evidenceId])->fetchColumn()===null,
+ 'Contenido vencido se elimina tras confirmación');
+$purged=query($pdo,'SELECT sha256,purged_at FROM attachments WHERE id=?',[$evidenceId])->fetch();
+check($purged['sha256']===hash('sha256','ABCDE') && $purged['purged_at']!==null,
+ 'Huella y fecha de purga permanecen');
+check((int)query($pdo,"SELECT COUNT(*) FROM audit_log WHERE event='evidencia_purgada'")->fetchColumn()===1,
+ 'Purga deja bitácora rastreable');
 echo "TODAS LAS PRUEBAS DE HUMO PASARON.\n";
