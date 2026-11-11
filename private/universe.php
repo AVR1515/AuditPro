@@ -37,3 +37,27 @@ function assessments(PDO $pdo, bool $latest = false): array {
         ($latest ? ' WHERE r.id=(SELECT MAX(x.id) FROM risk_assessments x WHERE x.unit_id=r.unit_id)' : '') .
         ' ORDER BY r.score DESC, r.id DESC')->fetchAll();
 }
+
+/** Cobertura histórica vinculada al universo: no confunde auditorías manuales con unidades evaluadas. */
+function unitCoverage(PDO $pdo): array {
+    return $pdo->query("SELECT u.id,u.name,u.process_name,u.cycle_months,
+        r.rating,r.score,r.created_at AS assessed_at,
+        MAX(a.year) AS last_audit_year,
+        COUNT(DISTINCT a.id) AS audit_count,
+        COUNT(DISTINCT CASE WHEN a.status='cerrada' THEN a.id END) AS closed_count
+        FROM auditable_units u
+        LEFT JOIN risk_assessments r ON r.id=(
+            SELECT MAX(x.id) FROM risk_assessments x WHERE x.unit_id=u.id
+        )
+        LEFT JOIN risk_assessments historic ON historic.unit_id=u.id
+        LEFT JOIN audit_assessment_links l ON l.assessment_id=historic.id
+        LEFT JOIN audits a ON a.id=l.audit_id
+        GROUP BY u.id,u.name,u.process_name,u.cycle_months,r.rating,r.score,r.created_at
+        ORDER BY CASE r.rating WHEN 'critico' THEN 4 WHEN 'alto' THEN 3 WHEN 'medio' THEN 2 WHEN 'bajo' THEN 1 ELSE 0 END DESC,u.name")->fetchAll();
+}
+
+function coverageStatus(array $row, int $year): string {
+    if ($row['last_audit_year'] === null) return 'Sin auditorías vinculadas';
+    $cycleYears = max(1,(int) ceil(((int) $row['cycle_months']) / 12));
+    return $year-(int) $row['last_audit_year'] >= $cycleYears ? 'Revisión de cobertura requerida' : 'Dentro del ciclo aproximado';
+}

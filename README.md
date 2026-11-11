@@ -44,6 +44,8 @@ La bandeja también muestra solicitudes de evidencia abiertas, vencidas o respon
 
 Supervisión crea y archiva plantillas de procedimientos desde **Plantillas de pruebas**. El auditor asignado puede agregar una prueba desde una plantilla activa durante el trabajo de campo. El título y procedimiento se copian al expediente; la relación de origen se conserva en `test_template_uses`, de modo que el historial no depende de cambios posteriores en el catálogo. La creación y el archivo quedan en `audit_log`. En instalaciones existentes, ejecuta `private/upgrade-011.sql` después de la migración 010, y otorga SELECT, INSERT y UPDATE en `test_templates` y SELECT e INSERT en `test_template_uses`. Para instalación limpia, el instalador ya ejecuta la migración 011.
 
+La vista **Universo auditable** incluye una tabla de cobertura histórica por unidad y riesgo actual. Considera únicamente expedientes vinculados a evaluaciones de riesgo y compara el último año auditado con el ciclo en meses como aproximación anual; no sustituye el análisis de fechas reales ni la evaluación de calidad de la cobertura.
+
 ## Capacidad anual del equipo auditor (upgrade-012)
 
 En **Plan anual**, supervisión puede registrar las horas disponibles de cada auditor por año, consultar las horas planificadas y ejecutadas de sus expedientes y detectar sobreasignaciones. Un valor de capacidad no registrado se muestra como **Sin configurar**, nunca como cero. El balance no bloquea la planificación; es una alerta para revisión. Ejecuta `private/upgrade-012.sql` después de la migración 011 y otorga SELECT, INSERT y UPDATE sobre `auditor_capacity`. Para instalaciones nuevas el instalador incluye la migración.
