@@ -1,0 +1,5 @@
+CREATE TABLE IF NOT EXISTS scheduled_job_runs (
+ job_key VARCHAR(80) NOT NULL PRIMARY KEY,
+ last_success_at DATETIME NOT NULL,
+ successful_runs BIGINT UNSIGNED NOT NULL DEFAULT 1
+) ENGINE=InnoDB;
