@@ -11,6 +11,16 @@ try {
     $pdo = db(config());
     if (!$pdo->query('SELECT id FROM installation WHERE id=1')->fetchColumn()) throw new RuntimeException('Instalación pendiente.');
     $today=new DateTimeImmutable('today');
+    if (($argv[1] ?? '')==='--dry-run') {
+        $candidates=reminderCandidates($pdo,$today);
+        $policy=escalationPolicy($pdo);
+        fwrite(STDOUT,"Previsión sin escritura: próximas ".
+            (int)$candidates['approaching'].", vencidas ".
+            (int)$candidates['overdue'].". Escalamiento ".
+            ((int)$policy['enabled'] ? 'activo' : 'desactivado').".\n");
+        exit(0);
+    }
+    if (count($argv)>1) throw new DomainException('Solo se admite la opción --dry-run.');
     generateReminders($pdo,$today);
     generateEscalations($pdo,$today);
     fwrite(STDOUT,"Recordatorios procesados.\n");
