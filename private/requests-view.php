@@ -1,4 +1,6 @@
 <?php
+$requestFiles = query($pdo,'SELECT b.id,b.filename FROM attachments b
+    JOIN tests t ON t.id=b.test_id WHERE t.audit_id=? AND b.purged_at IS NULL ORDER BY b.id DESC',[$id])->fetchAll();
 $requests = query($pdo,
     'SELECT r.*,u.name AS requester FROM evidence_requests r JOIN users u ON u.id=r.requested_by WHERE r.audit_id=? ORDER BY r.id DESC',
     [$id])->fetchAll();
@@ -17,7 +19,10 @@ $requests = query($pdo,
 <?php foreach ($requests as $request):
     $requestKeys = $keys + ['request_id'=>$request['id']];
     $history = query($pdo,
-        'SELECT h.*,u.name AS author FROM evidence_request_responses h JOIN users u ON u.id=h.author_id WHERE h.request_id=? ORDER BY h.id',
+        'SELECT h.*,u.name AS author,b.id AS attachment_id,b.filename,b.purged_at FROM evidence_request_responses h JOIN users u ON u.id=h.author_id
+        LEFT JOIN evidence_request_attachments l ON l.response_id=h.id
+        LEFT JOIN attachments b ON b.id=l.attachment_id
+        WHERE h.request_id=? ORDER BY h.id',
         [$request['id']])->fetchAll();
 ?>
 <article id="request-<?= e($request['id']) ?>">
@@ -26,11 +31,15 @@ $requests = query($pdo,
 <?php copyBlock('Documentación requerida',$request['description']); ?>
 <?php if ($history): ?><details><summary>Historial de respuestas y devoluciones (<?= count($history) ?>)</summary>
 <?php foreach ($history as $entry): ?>
-<p class="copy"><strong><?= $entry['is_return'] ? 'Devolución' : 'Respuesta' ?> · <?= e($entry['author']) ?> · <?= e($entry['created_at']) ?></strong> <?= e($entry['response_text']) ?></p>
+<p class="copy"><strong><?= $entry['is_return'] ? 'Devolución' : 'Respuesta' ?> · <?= e($entry['author']) ?> · <?= e($entry['created_at']) ?></strong> <?= e($entry['response_text']) ?>
+<?php if ($entry['attachment_id']): ?> · Evidencia: <?php if ($entry['purged_at']): ?><?= e($entry['filename']) ?> (contenido purgado)
+<?php else: ?><a href="index.php?download=<?= e($entry['attachment_id']) ?>"><?= e($entry['filename']) ?></a><?php endif; ?><?php endif; ?></p>
 <?php endforeach; ?></details><?php endif; ?>
 <?php if ($auditor && in_array($state,['en_campo','en_revision'],true) && $request['status'] === 'abierta'): ?>
 <?php form('request_answer',$requestKeys); ?>
 <label>Respuesta y referencias de evidencia<textarea name="answer" maxlength="12000" required></textarea></label>
+<?php if ($requestFiles): ?><label>Evidencia adjunta existente (opcional)<select name="attachment_id"><option value="">Solo respuesta textual</option>
+<?php foreach ($requestFiles as $file): ?><option value="<?= e($file['id']) ?>"><?= e($file['filename']) ?></option><?php endforeach; ?></select></label><?php endif; ?>
 <button>Enviar respuesta</button></form>
 <?php endif; ?>
 <?php if ($manager && $request['status'] === 'respondida'): ?>
