@@ -164,6 +164,7 @@ try {
             redirect();
         }
         if (in_array($op,['preview_obligations','confirm_obligations','cancel_obligations'],true)) {
+            if (scopedGlobalDeny($user)) throw new DomainException('La importación global no está disponible para supervisores restringidos.');
             $destination = importObligations($pdo,$user,$op);
             $pdo->commit();
             if ($op !== 'preview_obligations') unset($_SESSION['obligation_import']);
@@ -288,7 +289,7 @@ if (($_GET['view'] ?? '') === 'account' && !$audit) {
     endPage(true);
     return;
 }
-if ($view === 'import' && canCompliance($user) && !$audit) {
+if ($view === 'import' && canCompliance($user) && !scopedGlobalDeny($user) && !$audit) {
     require __DIR__ . '/../private/import-view.php';
     endPage(true);
     return;
