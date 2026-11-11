@@ -31,6 +31,9 @@ $pdo = new PDO(
     getenv('AUDITPRO_TEST_PASSWORD') ?: '',
     [PDO::ATTR_ERRMODE=>PDO::ERRMODE_EXCEPTION,PDO::ATTR_EMULATE_PREPARES=>false,PDO::ATTR_DEFAULT_FETCH_MODE=>PDO::FETCH_ASSOC]
 );
+if ($pdo->query('SELECT DATABASE()')->fetchColumn() !== 'auditpro_test') {
+    throw new RuntimeException('Las pruebas solo se permiten en la base auditpro_test.');
+}
 foreach (array_merge(['schema.sql'],array_map(
     static fn(int $number): string => sprintf('upgrade-%03d.sql',$number),
     range(2,14)
