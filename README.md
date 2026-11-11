@@ -62,6 +62,8 @@ La bandeja de supervisión destaca las aceptaciones aprobadas cuya revisión ven
 
 ## Atestaciones de obligaciones de cumplimiento (upgrade-014)
 
+La interfaz destaca vencimientos a partir de la próxima revisión definida en la atestación más reciente; cuando no hay atestaciones usa la fecha original de la obligación. El script `tests/smoke.php` se niega a operar si la base seleccionada no se llama `auditpro_test`.
+
 El personal de Cumplimiento y Supervisión puede registrar evaluaciones sucesivas de obligaciones: cumple, parcial, no cumple o no aplica, con referencia de evidencia, razonamiento, fecha evaluada y próxima revisión. Cada atestación se guarda como registro histórico independiente; no se sobreescriben evaluaciones previas. Auditoría y responsables no pueden emitir atestaciones. Ejecuta `private/upgrade-014.sql` después de 013 en instalaciones existentes y otorga SELECT e INSERT sobre `obligation_attestations`.
 
 ## XAMPP en localhost
