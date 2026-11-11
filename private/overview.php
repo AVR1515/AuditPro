@@ -17,7 +17,10 @@ function planFilters(): array {
 function planScope(array $user, array $filters): array {
     $where = [];
     $params = [];
-    if (!manage($user)) {
+    if (restrictedSupervisor($user)) {
+        $where[] = 'EXISTS (SELECT 1 FROM audit_assessment_links l JOIN risk_assessments r ON r.id=l.assessment_id JOIN supervisor_unit_grants g ON g.unit_id=r.unit_id WHERE l.audit_id=d.id AND g.user_id=?)';
+        $params[]=$user['id'];
+    } elseif (!manage($user)) {
         $where[] = 'd.owner_id=?';
         $params[] = $user['id'];
     }
