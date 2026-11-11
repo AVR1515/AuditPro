@@ -39,7 +39,8 @@ function scopedRiskIndicators(PDO $pdo,array $user): array {
 function scopedUnitCoverage(PDO $pdo,array $user): array {
     if (!restrictedSupervisor($user)) throw new DomainException('La vista requiere ámbito restringido.');
     return query($pdo,'SELECT u.id,u.name,u.cycle_months,
-        COUNT(DISTINCT d.id) AS audit_count,MAX(d.year) AS last_audit_year
+        COUNT(DISTINCT d.id) AS audit_count,MAX(d.year) AS last_audit_year,
+        MAX(CASE WHEN d.status='cerrada' THEN d.closed_on ELSE NULL END) AS last_closed_on
         FROM auditable_units u
         JOIN supervisor_unit_grants g ON g.unit_id=u.id AND g.user_id=?
         LEFT JOIN risk_assessments r ON r.unit_id=u.id
