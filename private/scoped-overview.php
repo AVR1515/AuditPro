@@ -34,3 +34,16 @@ function scopedRiskIndicators(PDO $pdo,array $user): array {
     }
     return $rows;
 }
+
+/** Cobertura histórica en unidades concedidas, sin duplicar expedientes con varias evaluaciones. */
+function scopedUnitCoverage(PDO $pdo,array $user): array {
+    if (!restrictedSupervisor($user)) throw new DomainException('La vista requiere ámbito restringido.');
+    return query($pdo,'SELECT u.id,u.name,u.cycle_months,
+        COUNT(DISTINCT d.id) AS audit_count,MAX(d.year) AS last_audit_year
+        FROM auditable_units u
+        JOIN supervisor_unit_grants g ON g.unit_id=u.id AND g.user_id=?
+        LEFT JOIN risk_assessments r ON r.unit_id=u.id
+        LEFT JOIN audit_assessment_links l ON l.assessment_id=r.id
+        LEFT JOIN audits d ON d.id=l.audit_id
+        GROUP BY u.id,u.name,u.cycle_months ORDER BY u.name',[(int)$user['id']])->fetchAll();
+}
