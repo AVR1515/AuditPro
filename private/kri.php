@@ -10,6 +10,13 @@ function kriDecimal(string $key): string {
     }
     return $value;
 }
+function kriStale(array $row, DateTimeImmutable $today): bool {
+    $reference=$row['observed_on'] ?? ($row['created_at'] ?? null);
+    if ($reference===null) return false;
+    $observed=DateTimeImmutable::createFromFormat('!Y-m-d',substr((string)$reference,0,10));
+    if (!$observed) return false;
+    return $observed->modify('+'.(int)($row['review_interval_days'] ?? 90).' days') < $today;
+}
 function kriBreached(array $row): bool {
     if ($row['observed_value'] === null) return false;
     $value=(float)$row['observed_value'];
@@ -69,13 +76,16 @@ function saveKri(PDO $pdo, array $user, string $op): void {
         return;
     }
     if ($op==='kri_create') {
+        $interval=filter_var($_POST['review_interval_days'] ?? '90',FILTER_VALIDATE_INT,
+            ['options'=>['min_range'=>1,'max_range'=>365]]);
+        if ($interval===false) throw new DomainException('La frecuencia de medición debe estar entre 1 y 365 días.');
         $title=field('title',180);
         $unit=field('unit',80);
         $direction=choice('direction',['maximo','minimo']);
         $threshold=kriDecimal('threshold');
         query($pdo,'INSERT INTO grc_kri_indicators
-            (risk_id,title,unit,direction,threshold,created_by)
-            VALUES (?,?,?,?,?,?)',[$riskId,$title,$unit,$direction,$threshold,$actor]);
+            (risk_id,title,unit,direction,threshold,created_by,review_interval_days)
+            VALUES (?,?,?,?,?,?,?)',[$riskId,$title,$unit,$direction,$threshold,$actor,$interval]);
         record($pdo,$actor,null,'kri_creado','Riesgo #'.$riskId.' · indicador #'.$pdo->lastInsertId());
         return;
     }
