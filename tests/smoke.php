@@ -390,6 +390,28 @@ deny(static fn()=>saveKri($pdo,$restrictedUser,'kri_archive'),
 
 check(count(planRows($pdo,$restrictedUser,['year'=>'','status'=>'','risk'=>'','q'=>'']))===1,
  'Listado no filtra información de otras unidades');
+// Trazabilidad: un control compartido no expone pruebas de expedientes ajenos.
+query($pdo,"INSERT INTO grc_controls(title,owner_name,frequency,description)
+ VALUES ('Control compartido','Gerencia','mensual','Revisión documentada')");
+$controlShared=(int)$pdo->lastInsertId();
+query($pdo,'INSERT INTO grc_risk_controls(risk_id,control_id) VALUES (?,?)',[$authorizedRisk,$controlShared]);
+query($pdo,'INSERT INTO grc_risk_controls(risk_id,control_id) VALUES (?,?)',[$foreignRisk,$controlShared]);
+query($pdo,'INSERT INTO grc_control_tests(test_id,control_id) VALUES (?,?)',[$test['id'],$controlShared]);
+query($pdo,"INSERT INTO tests(audit_id,title,procedure_text) VALUES (?,'Prueba privada','No divulgar')",[$otherAudit]);
+$foreignTest=(int)$pdo->lastInsertId();
+query($pdo,'INSERT INTO grc_control_tests(test_id,control_id) VALUES (?,?)',[$foreignTest,$controlShared]);
+query($pdo,"INSERT INTO grc_controls(title,owner_name,frequency,description)
+ VALUES ('Control ajeno','Otra unidad','anual','No autorizado')");
+$foreignControl=(int)$pdo->lastInsertId();
+query($pdo,'INSERT INTO grc_risk_controls(risk_id,control_id) VALUES (?,?)',[$foreignRisk,$foreignControl]);
+$visibleControls=scopedRiskControls($pdo,$restrictedUser);
+check(count($visibleControls[$authorizedRisk]??[])===1 &&
+    empty($visibleControls[$foreignRisk]),'Solo revela controles vinculados a riesgos concedidos');
+$linkedTests=scopedControlTests($pdo,$restrictedUser);
+check(count($linkedTests[$authorizedRisk][$controlShared]??[])===1 &&
+    (int)$linkedTests[$authorizedRisk][$controlShared][0]['test_id']===(int)$test['id'],
+    'Control compartido solo muestra prueba de expediente autorizado');
+check(empty($linkedTests[$foreignRisk]),'No filtra trazabilidad de riesgo ajeno');
 $_POST=['supervisor_id'=>'2','unit_id'=>(string)$unit];
 saveUnitGrant($pdo,$admin,'unit_revoke');
 deny(static fn()=>accessible($pdo,$restrictedUser,$auditId),'Revocación se aplica inmediatamente');
