@@ -27,6 +27,8 @@ require __DIR__ . '/../private/unit-access.php';
 require __DIR__ . '/../private/scoped-overview.php';
 require __DIR__ . '/../private/policies.php';
 require __DIR__ . '/../private/retention.php';
+require __DIR__ . '/../private/preflight.php';
+require __DIR__ . '/../private/release-readiness.php';
 start();
 $error = null;
 $user = null;
@@ -260,6 +262,11 @@ if ($view === 'policies' && canCompliance($user) && !scopedGlobalDeny($user) && 
 }
 if ($view === 'my-units' && restrictedSupervisor($user) && !$audit) {
     require __DIR__ . '/../private/scoped-overview-view.php';
+    endPage(true);
+    return;
+}
+if ($view === 'readiness' && $user['role'] === 'admin' && !$audit) {
+    require __DIR__ . '/../private/release-readiness-view.php';
     endPage(true);
     return;
 }
