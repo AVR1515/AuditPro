@@ -575,4 +575,32 @@ query($pdo,'INSERT INTO supervisor_unit_grants(user_id,unit_id,granted_by) VALUE
  ON DUPLICATE KEY UPDATE granted_by=VALUES(granted_by)',[$unit]);
 check(count(scopedRiskOverview($pdo,['id'=>2,'role'=>'supervisor','unit_restricted'=>1]))===1,
  'Entorno HTTP usa supervisor restringido con un solo riesgo visible');
+
+// Flujo de cierre: nueva fecha efectiva registrada al avanzar.
+query($pdo,"INSERT INTO audits(title,entity,objective,year,risk,owner_id,status)
+ VALUES ('Cierre de prueba','Finanzas','Validar fecha',?,'bajo',3,'emitida')",[(int)date('Y')]);
+$closingAuditId=(int)$pdo->lastInsertId();
+$_POST=['audit_id'=>(string)$closingAuditId];
+mutate($pdo,$admin,'advance');
+check(query($pdo,'SELECT closed_on FROM audits WHERE id=?',[$closingAuditId])->fetchColumn()===date('Y-m-d'),
+ 'La transición de cierre fija fecha real para cobertura');
+// Alertas ejecutivas: datos de muestra vencidos, no omisión silenciosa.
+query($pdo,"UPDATE audits SET status='en_campo' WHERE id=?",[$otherAudit]);
+query($pdo,"INSERT INTO evidence_requests(audit_id,requested_by,subject,description,due_on)
+ VALUES (?,1,'Solicitud atrasada','Requiere acta',?)",
+ [$otherAudit,date('Y-m-d',strtotime('-3 days'))]);
+query($pdo,"UPDATE obligation_attestations SET next_review_on=? WHERE obligation_id=?",
+ [date('Y-m-d',strtotime('-2 days')),$obligationId]);
+query($pdo,"UPDATE action_risk_acceptances SET review_on=? WHERE id=?",
+ [date('Y-m-d',strtotime('-1 day')),$acceptId]);
+query($pdo,"INSERT INTO obligation_exceptions
+ (obligation_id,requested_by,title,rationale,mitigating_controls,expires_on,status,decided_by)
+ VALUES (?,2,'Excepción vencida','Control pendiente','Revisión manual',?,'aprobada',1)",
+ [$foreignObligation,date('Y-m-d',strtotime('-2 days'))]);
+$exec=riskDashboard($pdo,(int)date('Y'));
+check($exec['overdue_evidence_requests']>=1 &&
+ $exec['overdue_compliance_reviews']>=1 &&
+ $exec['accepted_risks_due']>=1 &&
+ $exec['exceptions_due']>=1,
+ 'Tablero ejecutivo integra solicitudes, cumplimiento y riesgos aceptados vencidos');
 echo "TODAS LAS PRUEBAS DE HUMO PASARON.\n";
