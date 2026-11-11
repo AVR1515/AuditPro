@@ -148,6 +148,14 @@ Para diagnosticar las tareas diarias sin generar avisos, ejecuta `php private/re
 
 Para actualizar una instalación existente, **respalda primero la base de datos** y aplica en orden todos los scripts no instalados, hasta `private/upgrade-028.sql`. Ejecuta `php private/preflight-cli.php`; posteriormente revisa la salud del cron, los permisos por unidad y las actas de aprobación. En producción apunta el servidor directamente a `public/` y mantén HTTPS y la configuración privada fuera de la raíz pública.
 
+## Pruebas automatizadas de recuperación y aceptación por versión
+
+El flujo de integración continua ahora ejecuta `bash tests/restore-smoke.sh` **solo sobre `auditpro_test`**: efectúa un volcado SQL coherente, restaura en `auditpro_restore_test`, compara recuentos de tablas, huellas SHA-256, contenido BLOB y evidencias purgadas, y elimina la base de restauración al terminar. Rechaza cualquier nombre de base de origen distinto de `auditpro_test`. También verifica el inicio de sesión de un administrador, la pantalla de preparación y la ejecución real e idempotente de `php private/remind.php` sobre datos ficticios.
+
+En **Preparación del lanzamiento**, la administración puede proporcionar el SHA completo de la versión instalada para comprobar las **declaraciones de aceptación de esa versión concreta**. El sistema toma el último resultado registrado por cada rol y control: un «no cumple» posterior prevalece sobre un «cumple» anterior, y no se traspasan aprobaciones a versiones futuras. El estado sigue siendo *pendiente de aprobación externa*: las actas deben cotejarse con las pruebas, el servidor y las firmas de los responsables.
+
+Estas pruebas son automáticas y reproducibles, pero **no prueban la restauración de un respaldo de la organización** ni la accesibilidad con usuarios, la seguridad del servidor definitivo o el consentimiento jurídico. Ver [guía de restauración](docs/restore-verification.md) y [puertas de liberación](docs/production-release-gates.md).
+
 ## XAMPP en localhost
 
 Si el proyecto completo está en `C:/xampp/htdocs/auditpro`, abre `http://localhost/auditpro/`. Apache redirige a `public/`. Los archivos `.htaccess` incluidos requieren `AllowOverride All` y bloquean el listado de carpetas, `private/` y los metadatos de Git. Conserva estos archivos al copiar o descomprimir el proyecto.
