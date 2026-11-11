@@ -13,6 +13,7 @@ require __DIR__ . '/../private/reminders.php';
 require __DIR__ . '/../private/revisions.php';
 require __DIR__ . '/../private/account.php';
 require __DIR__ . '/../private/obligation-import.php';
+require __DIR__ . '/../private/requests.php';
 start();
 $error = null;
 $user = null;
@@ -102,6 +103,11 @@ try {
             $pdo->commit();
             if ($op !== 'preview_obligations') unset($_SESSION['obligation_import']);
             redirect($destination);
+        }
+        if (in_array($op,REQUEST_OPS,true)) {
+            $id = saveEvidenceRequest($pdo,$user,$op);
+            $pdo->commit();
+            redirect('index.php?id=' . $id);
         }
         $id = mutate($pdo,$user,$op);
         $pdo->commit();
