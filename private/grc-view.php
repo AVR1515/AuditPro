@@ -28,6 +28,8 @@ $mappings = grcMappings($pdo,$user);
 <?php foreach ($obligations as $obligation): ?><article><h3><?= e($obligation['title']) ?></h3>
 <p><?= e($obligation['framework']) ?> · <?= e($obligation['reference_code']) ?> · <?= e($obligation['owner_name']) ?> · Revisión <?= e($obligation['review_on']) ?></p>
 <?php $history = $attestations[$obligation['id']] ?? []; ?>
+<?php $reviewDue = $history ? $history[0]['next_review_on'] : $obligation['review_on']; ?>
+<p><strong>Próxima revisión efectiva:</strong> <?= e($reviewDue) ?> · <?= $reviewDue < date('Y-m-d') ? 'Vencida' : ($reviewDue <= date('Y-m-d',strtotime('+30 days')) ? 'Próxima a vencer' : 'En plazo') ?></p>
 <?php if ($history): ?><p><strong>Última atestación:</strong> <?= e(str_replace('_',' ',$history[0]['result'])) ?> · <?= e($history[0]['reviewed_on']) ?> · Próxima revisión <?= e($history[0]['next_review_on']) ?></p>
 <details><summary>Historial de atestaciones (<?= count($history) ?>)</summary>
 <?php foreach ($history as $entry): ?><p class="copy"><strong><?= e($entry['author_name']) ?> · <?= e($entry['reviewed_on']) ?> · <?= e($entry['result']) ?></strong>
