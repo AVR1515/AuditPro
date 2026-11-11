@@ -3,9 +3,11 @@ $scopedUnits=scopedUnitOverview($pdo,$user);
 $scopedRisks=scopedRiskOverview($pdo,$user);
 $scopedIndicators=scopedRiskIndicators($pdo,$user);
 $scopedCoverage=scopedUnitCoverage($pdo,$user);
+$scopedControls=scopedRiskControls($pdo,$user);
+$scopedTests=scopedControlTests($pdo,$user);
 ?>
 <section><h2>Mis unidades y riesgos</h2>
-<p class="muted">Solo se muestran unidades y riesgos concedidos a tu cuenta. Puedes revisar el riesgo residual y registrar mediciones de indicadores existentes dentro de tus unidades. Crear o archivar indicadores, gestionar controles y consultar datos globales continúa reservado.</p>
+<p class="muted">Solo se muestran unidades y riesgos concedidos a tu cuenta. Puedes revisar el riesgo residual y registrar mediciones de indicadores existentes dentro de tus unidades. Crear o archivar indicadores y gestionar vínculos globales continúa reservado. Se muestra la trazabilidad de controles con pruebas exclusivamente de expedientes autorizados.</p>
 <dl class="metrics"><div><dt>Unidades autorizadas</dt><dd><?= count($scopedUnits) ?></dd></div>
 <div><dt>Riesgos visibles</dt><dd><?= count($scopedRisks) ?></dd></div>
 <div><dt>Sobre el apetito</dt><dd><?= count(array_filter($scopedRisks,static fn(array $r): bool => (int)$r['residual']>(int)$r['appetite'])) ?></dd></div></dl>
@@ -34,6 +36,23 @@ $scopedCoverage=scopedUnitCoverage($pdo,$user);
 <?php foreach ($scopedRisks as $risk): ?>
 <details id="risk-<?= e($risk['id']) ?>"><summary><?= e($risk['title']) ?> — revisión y mediciones</summary>
 <p class="muted">Unidad: <?= e($risk['unit_name']) ?>. Próxima revisión actual: <?= e($risk['review_on']) ?>.</p>
+<h4>Controles asociados y pruebas accesibles</h4>
+<?php if (empty($scopedControls[$risk['id']])): ?>
+<p class="muted">Sin controles vinculados a este riesgo.</p>
+<?php else: foreach ($scopedControls[$risk['id']] as $control): ?>
+<article>
+<h5><?= e($control['title']) ?></h5>
+<p class="muted">Responsable: <?= e($control['owner_name']) ?> · <?= e(str_replace('_',' ',$control['frequency'])) ?></p>
+<?php copyBlock('Descripción del control',$control['description']); ?>
+<?php $linkedTests=$scopedTests[$risk['id']][$control['control_id']] ?? []; ?>
+<?php if (!$linkedTests): ?><p class="muted">Sin pruebas accesibles asociadas.</p>
+<?php else: ?><ul><?php foreach ($linkedTests as $linked): ?>
+<li><a href="index.php?id=<?= e($linked['audit_id']) ?>"><?= e($linked['audit_title']) ?> · <?= e($linked['test_title']) ?></a>
+· <?= e($linked['test_status']) ?></li>
+<?php endforeach; ?></ul><?php endif; ?>
+</article>
+<?php endforeach; endif; ?>
+
 <?php form('risk_review',['risk_id'=>$risk['id']]); ?>
 <label>Nuevo riesgo residual<input type="number" name="residual" min="1" max="25" value="<?= e($risk['residual']) ?>" required></label>
 <label>Fecha de evaluación<input type="date" name="reviewed_on" max="<?= e(date('Y-m-d')) ?>" value="<?= e(date('Y-m-d')) ?>" required></label>
