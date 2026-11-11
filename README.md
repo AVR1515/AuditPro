@@ -102,7 +102,7 @@ Administración configura por archivo fechas de conservación (mínimo 365 días
 
 ## Preparación del piloto (fase 3)
 
-Ejecuta `php private/preflight-cli.php` desde el servidor configurado con `AUDITPRO_CONFIG`. Este comando no modifica la base de datos ni imprime contraseñas: comprueba PHP/extensiones, conexión, instalación, esquema hasta `upgrade-024.sql`, credenciales temporales deshabilitadas y configuración de aplicación. Un diagnóstico exitoso **no significa que el sistema esté aprobado para producción**. Completa los escenarios del archivo [docs/pilot-checklist.md](docs/pilot-checklist.md), validación de HTTPS, restauración real, accesibilidad y controles de autorización con usuarios reales.
+Ejecuta `php private/preflight-cli.php` desde el servidor configurado con `AUDITPRO_CONFIG`. Este comando no modifica la base de datos ni imprime contraseñas: comprueba PHP/extensiones, conexión, instalación, esquema hasta `upgrade-028.sql`, credenciales temporales deshabilitadas y configuración de aplicación. Un diagnóstico exitoso **no significa que el sistema esté aprobado para producción**. Completa los escenarios del archivo [docs/pilot-checklist.md](docs/pilot-checklist.md), validación de HTTPS, restauración real, accesibilidad y controles de autorización con usuarios reales.
 
 ## Políticas de cumplimiento versionadas (upgrade-021)
 
@@ -139,6 +139,14 @@ Las aceptaciones aprobadas pueden revisarse de nuevo desde el expediente, inclus
 Antes de habilitar AuditPro con datos reales, sigue las [puertas de liberación](docs/production-release-gates.md) y la [guía de restauración](docs/restore-verification.md). Ninguna prueba en GitHub sustituye la revisión de los propietarios del proceso, los controles de retención y la restauración en el servidor destino. El lanzamiento se considera **pendiente** hasta que todas las puertas estén aprobadas con evidencias y versión SHA.
 
 Para diagnosticar las tareas diarias sin generar avisos, ejecuta `php private/remind.php --dry-run`. Para verificar un despliegue HTTPS real sin enviar contraseñas: `bash tests/deployment-probe.sh https://servidor.example/auditpro`. Esta prueba comprueba la validez TLS, HSTS, CSP y el bloqueo de archivos privados. Para revisar los metadatos de conservación consulta **Retención de evidencias** como administrador. Revisa las políticas y evita purgar contenido antes de la aprobación jurídica.
+
+## Aprobación independiente de purga, salud de avisos y evidencias del piloto (026–028)
+
+- **026 — Purgado de evidencias:** administración solicita el purgado con justificación; una segunda cuenta administrativa debe aprobarlo o rechazarlo. La autorización aprobada caduca después de siete días. Modificar la retención o el bloqueo legal invalida autorizaciones vigentes. Solo entonces se permite purgar de forma irreversible, registrando solicitante, aprobador y ejecutor. La segunda autorización técnica **no sustituye** la autorización jurídica ni la restauración verificada. Concede SELECT/INSERT/UPDATE en `attachment_purge_authorizations`.
+- **027 — Tareas programadas:** `private/remind.php` registra una ejecución correcta después de completar recordatorios y escalaciones dentro de una transacción. Administración ve el último éxito y una alerta si han transcurrido más de 36 horas. `php private/remind.php --dry-run` no modifica datos ni registra un éxito. Concede SELECT/INSERT/UPDATE en `scheduled_job_runs`.
+- **028 — Evidencias del piloto:** el módulo **Evidencias del piloto** permite a los roles autorizados declarar resultados *conformes/no conformes*, con referencias a actas, fecha, autor y SHA completo de la versión probada. Los registros son inmutables y los distintos roles no pueden declarar comprobaciones ajenas. Administración consulta las declaraciones en **Preparación del lanzamiento**. Estos registros **no certifican** por sí solos un despliegue real ni una aprobación jurídica. Concede SELECT/INSERT en `pilot_gate_signoffs`.
+
+Para actualizar una instalación existente, **respalda primero la base de datos** y aplica en orden todos los scripts no instalados, hasta `private/upgrade-028.sql`. Ejecuta `php private/preflight-cli.php`; posteriormente revisa la salud del cron, los permisos por unidad y las actas de aprobación. En producción apunta el servidor directamente a `public/` y mantén HTTPS y la configuración privada fuera de la raíz pública.
 
 ## XAMPP en localhost
 
