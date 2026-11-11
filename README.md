@@ -100,6 +100,10 @@ Administración puede habilitar alcance restringido a un supervisor desde **Acce
 
 Administración configura por archivo fechas de conservación (mínimo 365 días desde su carga) y bloqueo legal desde **Retención de evidencias**. Sin fecha configurada, la evidencia permanece indefinidamente. No existe purgado automático: para purgar se exige que el expediente esté cerrado, el plazo esté vencido y no haya bloqueo legal. Se requiere confirmación explícita. El contenido se elimina irreversiblemente pero se conservan metadatos, SHA-256 y bitácora. **Realiza un respaldo y valida los requisitos legales antes de purgar**; el respaldo puede contener copias que requieren un procedimiento independiente de retención. Ejecuta `private/upgrade-020.sql` y concede UPDATE en `attachments` además de SELECT/INSERT. No habilites el purgado a administradores sin autorización de tu organización.
 
+## Preparación del piloto (fase 3)
+
+Ejecuta `php private/preflight-cli.php` desde el servidor configurado con `AUDITPRO_CONFIG`. Este comando no modifica la base de datos ni imprime contraseñas: comprueba PHP/extensiones, conexión, instalación, esquema hasta `upgrade-020.sql`, credenciales temporales deshabilitadas y configuración de aplicación. Un diagnóstico exitoso **no significa que el sistema esté aprobado para producción**. Completa los escenarios del archivo [docs/pilot-checklist.md](docs/pilot-checklist.md), validación de HTTPS, restauración real, accesibilidad y controles de autorización con usuarios reales.
+
 ## XAMPP en localhost
 
 Si el proyecto completo está en `C:/xampp/htdocs/auditpro`, abre `http://localhost/auditpro/`. Apache redirige a `public/`. Los archivos `.htaccess` incluidos requieren `AllowOverride All` y bloquean el listado de carpetas, `private/` y los metadatos de Git. Conserva estos archivos al copiar o descomprimir el proyecto.
