@@ -4,7 +4,7 @@ declare(strict_types=1);
 const TEMPLATE_OPS = ['template_create','template_archive','template_apply'];
 
 function canViewTemplates(array $user): bool {
-    return manage($user) || $user['role'] === 'auditor';
+    return (manage($user) && !restrictedSupervisor($user)) || $user['role'] === 'auditor';
 }
 
 function templateCatalog(PDO $pdo): array {
@@ -12,6 +12,8 @@ function templateCatalog(PDO $pdo): array {
 }
 
 function saveTemplate(PDO $pdo, array $user, string $op): ?int {
+    if ($op !== 'template_apply' && restrictedSupervisor($user))
+        throw new DomainException('El catálogo global de plantillas está restringido.');
     $actor = (int) $user['id'];
     if ($op === 'template_create') {
         if (!manage($user)) throw new DomainException('Solo supervisión puede crear plantillas.');
