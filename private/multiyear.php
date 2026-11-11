@@ -85,3 +85,28 @@ function multiyearLoad(PDO $pdo, int $planId): array {
         $result[$row['auditor_id'].':'.$row['target_year']]=$row;
     return $result;
 }
+
+/**
+ * Proyección consolidada: únicamente planes aprobados. Cuando dos planes
+ * aprueban la misma unidad para el mismo año se utiliza la revisión
+ * aprobada con ID más reciente, evitando duplicar compromisos.
+ */
+function multiyearForecast(PDO $pdo): array {
+    return $pdo->query('SELECT selected.target_year,selected.auditor_id,u.name AS auditor_name,
+        COUNT(*) AS unit_count,SUM(selected.estimated_minutes) AS forecast_minutes,
+        c.available_minutes,
+        COALESCE((SELECT SUM(h.minutes) FROM audit_time h JOIN audits a ON a.id=h.audit_id
+            WHERE a.owner_id=selected.auditor_id AND a.year=selected.target_year),0) AS actual_minutes
+        FROM multiyear_plan_items selected
+        JOIN multiyear_plans p ON p.id=selected.plan_id AND p.approved_by IS NOT NULL
+        JOIN users u ON u.id=selected.auditor_id
+        LEFT JOIN auditor_capacity c ON c.user_id=selected.auditor_id AND c.plan_year=selected.target_year
+        WHERE NOT EXISTS (
+            SELECT 1 FROM multiyear_plan_items later
+            JOIN multiyear_plans newer ON newer.id=later.plan_id AND newer.approved_by IS NOT NULL
+            WHERE later.unit_id=selected.unit_id AND later.target_year=selected.target_year
+            AND newer.id>p.id
+        )
+        GROUP BY selected.target_year,selected.auditor_id,u.name,c.available_minutes
+        ORDER BY selected.target_year,u.name')->fetchAll();
+}
