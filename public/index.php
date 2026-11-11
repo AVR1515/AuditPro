@@ -106,10 +106,11 @@ try {
             redirect('index.php?view=universe');
         }
         if (in_array($op,KRI_OPS,true)) {
-            if (scopedGlobalDeny($user)) throw new DomainException('Este módulo global no está disponible para supervisores restringidos.');
+            if (scopedGlobalDeny($user) && !in_array($op,['risk_review','kri_measure'],true))
+                throw new DomainException('La gestión global no está disponible para supervisores restringidos.');
             saveKri($pdo,$user,$op);
             $pdo->commit();
-            redirect('index.php?view=grc');
+            redirect(restrictedSupervisor($user) ? 'index.php?view=my-units' : 'index.php?view=grc');
         }
         if (in_array($op,EXCEPTION_OPS,true)) {
             if (scopedGlobalDeny($user)) throw new DomainException('Este módulo global no está disponible para supervisores restringidos.');
