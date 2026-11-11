@@ -15,6 +15,7 @@ require __DIR__ . '/../private/account.php';
 require __DIR__ . '/../private/obligation-import.php';
 require __DIR__ . '/../private/requests.php';
 require __DIR__ . '/../private/templates.php';
+require __DIR__ . '/../private/capacity.php';
 start();
 $error = null;
 $user = null;
@@ -80,6 +81,11 @@ try {
             saveGrc($pdo,$user,$op);
             $pdo->commit();
             redirect('index.php?view=grc');
+        }
+        if ($op === 'save_capacity') {
+            saveAuditorCapacity($pdo,$user);
+            $pdo->commit();
+            redirect('index.php?view=plans&capacity_year=' . positiveId('year'));
         }
         if (in_array($op,['snapshot_plan','approve_plan'],true)) {
             savePlan($pdo,$user,$op);

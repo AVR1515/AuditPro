@@ -39,7 +39,7 @@ try {
             foreach (explode(';', $schema) as $sql) {
                 if (trim($sql) !== '') $installer->exec($sql);
             }
-            foreach (['upgrade-002.sql','upgrade-003.sql','upgrade-004.sql','upgrade-005.sql','upgrade-006.sql','upgrade-007.sql','upgrade-008.sql','upgrade-009.sql','upgrade-010.sql','upgrade-011.sql'] as $file) {
+            foreach (['upgrade-002.sql','upgrade-003.sql','upgrade-004.sql','upgrade-005.sql','upgrade-006.sql','upgrade-007.sql','upgrade-008.sql','upgrade-009.sql','upgrade-010.sql','upgrade-011.sql','upgrade-012.sql'] as $file) {
                 $migration = file_get_contents(__DIR__ . '/../private/' . $file);
                 if ($migration === false) throw new RuntimeException('Falta un archivo del esquema.');
                 foreach (explode(';', $migration) as $sql) {
