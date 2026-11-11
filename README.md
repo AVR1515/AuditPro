@@ -58,6 +58,8 @@ El workflow de GitHub Actions ejecuta comprobaciones de sintaxis PHP y pruebas d
 
 Supervisión puede solicitar la aceptación excepcional de una acción abierta de un informe emitido. La solicitud guarda justificación, controles compensatorios y fecha futura de revisión. Solo otra cuenta de supervisor o administrador puede aprobar o rechazar. La aceptación cierra la acción operativamente, pero `action_risk_acceptances` distingue esta decisión de un cierre por evidencia de remediación. La decisión y el actor quedan en la bitácora. En instalaciones existentes ejecuta `private/upgrade-013.sql` después de 012 y otorga SELECT, INSERT y UPDATE sobre `action_risk_acceptances`.
 
+La bandeja de supervisión destaca las aceptaciones aprobadas cuya revisión vence dentro de 30 días, incluso cuando la auditoría ya está cerrada. El expediente conserva el historial de decisiones después del cierre.
+
 ## XAMPP en localhost
 
 Si el proyecto completo está en `C:/xampp/htdocs/auditpro`, abre `http://localhost/auditpro/`. Apache redirige a `public/`. Los archivos `.htaccess` incluidos requieren `AllowOverride All` y bloquean el listado de carpetas, `private/` y los metadatos de Git. Conserva estos archivos al copiar o descomprimir el proyecto.
