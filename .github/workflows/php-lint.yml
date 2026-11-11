@@ -31,6 +31,9 @@ jobs:
           grep -q "escalations.php" public/index.php
           test -s private/recovery.php
           test -s private/recover-admin.php
+          test -s private/preflight.php
+          test -s private/preflight-cli.php
+          test -s docs/pilot-checklist.md
           grep -q "kri.php" public/index.php
           grep -q "risk-dashboard.php" public/index.php
           grep -q "multiyear.php" public/index.php
