@@ -45,6 +45,9 @@ function saveRetention(PDO $pdo, array $user, string $op): void {
     if ($op==='retention_request') {
         if (!retentionEligible($item,new DateTimeImmutable('today')))
             throw new DomainException('Esta evidencia todavía no cumple los requisitos de purgado.');
+        query($pdo,"UPDATE attachment_purge_authorizations SET status='cancelada'
+            WHERE attachment_id=? AND status='aprobada'
+            AND decided_at<DATE_SUB(NOW(),INTERVAL 7 DAY)",[$id]);
         if (query($pdo,"SELECT 1 FROM attachment_purge_authorizations
             WHERE attachment_id=? AND status IN ('pendiente','aprobada') LIMIT 1",[$id])->fetchColumn())
             throw new DomainException('Ya existe una solicitud o autorización de purgado vigente.');
