@@ -11,6 +11,7 @@ require __DIR__ . '/../private/universe.php';
 require __DIR__ . '/../private/risk-acceptance.php';
 require __DIR__ . '/../private/grc.php';
 require __DIR__ . '/../private/attestations.php';
+require __DIR__ . '/../private/exceptions.php';
 
 function check(bool $ok, string $message): void {
     if (!$ok) throw new RuntimeException('FALLÓ: ' . $message);
@@ -36,7 +37,7 @@ if ($pdo->query('SELECT DATABASE()')->fetchColumn() !== 'auditpro_test') {
 }
 foreach (array_merge(['schema.sql'],array_map(
     static fn(int $number): string => sprintf('upgrade-%03d.sql',$number),
-    range(2,14)
+    range(2,15)
 )) as $migration) {
     $contents = file_get_contents(__DIR__.'/../private/'.$migration);
     if ($contents === false) throw new RuntimeException('Falta '.$migration);
@@ -44,7 +45,7 @@ foreach (array_merge(['schema.sql'],array_map(
         if (trim($sql) !== '') $pdo->exec($sql);
     }
 }
-echo "Migraciones 002–014 y esquema instalados.\n";
+echo "Migraciones 002–015 y esquema instalados.\n";
 foreach (['admin','supervisor','auditor','responsable'] as $role) {
     query($pdo,'INSERT INTO users(email,name,password_hash,role) VALUES (?,?,?,?)',
         [$role.'@example.test',ucfirst($role),password_hash('TestPass123456!',PASSWORD_DEFAULT),$role]);
@@ -147,4 +148,25 @@ saveAttestation($pdo,$supervisor);
 $history=obligationAttestations($pdo);
 check(count($history[$obligationId]??[])===2 && $history[$obligationId][0]['result']==='cumple'
  && $history[$obligationId][1]['result']==='parcial','Nueva atestación no borra la anterior');
+
+$_POST=['obligation_id'=>(string)$obligationId,'title'=>'Excepción temporal',
+ 'rationale'=>'Migración de controles','mitigating'=>'Monitoreo diario',
+ 'expires'=>date('Y-m-d',strtotime('+60 days'))];
+deny(static fn()=>saveComplianceException($pdo,$auditor,'exception_request'),
+ 'Auditor no solicita excepciones de cumplimiento');
+saveComplianceException($pdo,$supervisor,'exception_request');
+$exceptionId=(int)query($pdo,'SELECT id FROM obligation_exceptions WHERE obligation_id=? ORDER BY id DESC LIMIT 1',[$obligationId])->fetchColumn();
+check($exceptionId>0,'Excepción creada');
+$_POST=['obligation_id'=>(string)$obligationId,'exception_id'=>(string)$exceptionId,
+ 'decision'=>'aprobada','decision_note'=>'Compensación suficiente'];
+deny(static fn()=>saveComplianceException($pdo,$supervisor,'exception_decide'),
+ 'Se impide la autoaprobación de excepciones');
+saveComplianceException($pdo,$admin,'exception_decide');
+check(query($pdo,'SELECT status FROM obligation_exceptions WHERE id=?',[$exceptionId])->fetchColumn()==='aprobada',
+ 'Excepción aprobada independientemente');
+$_POST=['obligation_id'=>(string)$obligationId,'exception_id'=>(string)$exceptionId,
+ 'closure_note'=>'Medida compensatoria sustituida'];
+saveComplianceException($pdo,$admin,'exception_close');
+check(query($pdo,'SELECT status FROM obligation_exceptions WHERE id=?',[$exceptionId])->fetchColumn()==='cerrada',
+ 'Excepción cerrada conservando historial');
 echo "TODAS LAS PRUEBAS DE HUMO PASARON.\n";
