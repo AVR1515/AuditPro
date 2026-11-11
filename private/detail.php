@@ -29,7 +29,7 @@ $next = $manager ? nextState($pdo,$audit) : null;
 </section>
 <?php require __DIR__ . '/hours-view.php'; ?>
 <?php require __DIR__ . '/requests-view.php'; ?>
-<?php if ($manager && $state === 'emitida') require __DIR__ . '/risk-acceptance-view.php'; ?>
+<?php if ($manager && in_array($state,['emitida','cerrada'],true)) require __DIR__ . '/risk-acceptance-view.php'; ?>
 <section><h2>Pruebas y papeles de trabajo</h2>
 <?php if ($auditor && $state === 'en_campo' && ($availableTemplates = templateCatalog($pdo))): ?>
 <details><summary>Crear prueba desde plantilla</summary><?php form('template_apply',$keys); ?>
