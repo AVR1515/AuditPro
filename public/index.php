@@ -23,6 +23,7 @@ require __DIR__ . '/../private/multiyear.php';
 require __DIR__ . '/../private/kri.php';
 require __DIR__ . '/../private/risk-dashboard.php';
 require __DIR__ . '/../private/escalations.php';
+require __DIR__ . '/../private/unit-access.php';
 start();
 $error = null;
 $user = null;
@@ -36,7 +37,7 @@ try {
         throw $exception;
     }
     if (isset($_SESSION['user'])) {
-        $account = query($pdo,'SELECT id,name,role,password_hash FROM users WHERE id=? AND active=1',[$_SESSION['user']])->fetch();
+        $account = query($pdo,'SELECT id,name,role,unit_restricted,password_hash FROM users WHERE id=? AND active=1',[$_SESSION['user']])->fetch();
         if ($account && hash_equals(hash('sha256',$account['password_hash']),$_SESSION['password_version'] ?? '')) {
             unset($account['password_hash']);
             $user = $account;
@@ -79,42 +80,55 @@ try {
         }
         if (!$user) throw new DomainException('Inicia sesión para continuar.');
         $pdo->beginTransaction();
+        if (in_array($op,['unit_scope','unit_grant','unit_revoke'],true)) {
+            saveUnitGrant($pdo,$user,$op);
+            $pdo->commit();
+            redirect('index.php?view=unit-access');
+        }
         if (in_array($op,['unit','assess'],true)) {
+            if (scopedGlobalDeny($user)) throw new DomainException('Administración global del universo no disponible para supervisores restringidos.');
             assess($pdo,$user,$op);
             $pdo->commit();
             redirect('index.php?view=universe');
         }
         if (in_array($op,KRI_OPS,true)) {
+            if (scopedGlobalDeny($user)) throw new DomainException('Este módulo global no está disponible para supervisores restringidos.');
             saveKri($pdo,$user,$op);
             $pdo->commit();
             redirect('index.php?view=grc');
         }
         if (in_array($op,EXCEPTION_OPS,true)) {
+            if (scopedGlobalDeny($user)) throw new DomainException('Este módulo global no está disponible para supervisores restringidos.');
             saveComplianceException($pdo,$user,$op);
             $pdo->commit();
             redirect('index.php?view=grc');
         }
         if ($op === 'obligation_attest') {
+            if (scopedGlobalDeny($user)) throw new DomainException('Este módulo global no está disponible para supervisores restringidos.');
             saveAttestation($pdo,$user);
             $pdo->commit();
             redirect('index.php?view=grc');
         }
         if (in_array($op,GRC_OPS,true)) {
+            if (scopedGlobalDeny($user)) throw new DomainException('Este módulo global no está disponible para supervisores restringidos.');
             saveGrc($pdo,$user,$op);
             $pdo->commit();
             redirect('index.php?view=grc');
         }
         if (in_array($op,MULTIYEAR_OPS,true)) {
+            if (scopedGlobalDeny($user)) throw new DomainException('Planificación global no disponible para supervisores restringidos.');
             saveMultiyear($pdo,$user,$op);
             $pdo->commit();
             redirect('index.php?view=plans');
         }
         if ($op === 'save_capacity') {
+            if (scopedGlobalDeny($user)) throw new DomainException('Capacidad global no disponible para supervisores restringidos.');
             saveAuditorCapacity($pdo,$user);
             $pdo->commit();
             redirect('index.php?view=plans&capacity_year=' . positiveId('year'));
         }
         if (in_array($op,['snapshot_plan','approve_plan'],true)) {
+            if (scopedGlobalDeny($user)) throw new DomainException('Planificación global no disponible para supervisores restringidos.');
             savePlan($pdo,$user,$op);
             $pdo->commit();
             redirect('index.php?view=plans');
@@ -125,6 +139,7 @@ try {
             redirect('index.php?view=inbox');
         }
         if ($op === 'read_escalation') {
+            if (scopedGlobalDeny($user)) throw new DomainException('Escalaciones globales no disponibles para supervisores restringidos.');
             readEscalation($pdo,$user,positiveId('escalation_id'));
             $pdo->commit();
             redirect('index.php?view=inbox');
@@ -222,12 +237,17 @@ endPage(); return; endif; ?>
 $manager = manage($user);
 $auditor = $user['role'] === 'auditor';
 $responsible = $user['role'] === 'responsable';
-if (($_GET['view'] ?? '') === 'universe' && $manager && !$audit) {
+if ($view === 'unit-access' && $user['role'] === 'admin' && !$audit) {
+    require __DIR__ . '/../private/unit-access-view.php';
+    endPage(true);
+    return;
+}
+if (($_GET['view'] ?? '') === 'universe' && $manager && !scopedGlobalDeny($user) && !$audit) {
     require __DIR__ . '/../private/universe-view.php';
     endPage(true);
     return;
 }
-if ($view === 'grc' && canGrc($user) && !$audit) {
+if ($view === 'grc' && canGrc($user) && !scopedGlobalDeny($user) && !$audit) {
     require __DIR__ . '/../private/grc-view.php';
     endPage(true);
     return;
@@ -242,7 +262,7 @@ if ($view === 'inbox' && !isGrcSpecialist($user) && !$audit) {
     endPage(true);
     return;
 }
-if (($_GET['view'] ?? '') === 'plans' && $manager && !$audit) {
+if (($_GET['view'] ?? '') === 'plans' && $manager && !scopedGlobalDeny($user) && !$audit) {
     require __DIR__ . '/../private/plans-view.php';
     endPage(true);
     return;
@@ -299,7 +319,7 @@ if (!$audit):
 <section><h2>Nueva auditoría</h2><?php if (!$auditors): ?><p>Crea primero un usuario con rol auditor.</p><?php else: form('audit'); ?>
 <label>Título<input name="title" required maxlength="180"></label>
 <label>Evaluación de riesgo<select name="assessment"><option value="">Captura manual</option>
-<?php foreach (assessments($pdo,true) as $evaluation): ?><option value="<?= e($evaluation['id']) ?>"><?= e($evaluation['name']) ?> · <?= e($evaluation['score']) ?>/25</option><?php endforeach; ?>
+<?php foreach (array_filter(assessments($pdo,true),fn($evaluation)=>allowedUnit($pdo,$user,(int)$evaluation['unit_id'])) as $evaluation): ?><option value="<?= e($evaluation['id']) ?>"><?= e($evaluation['name']) ?> · <?= e($evaluation['score']) ?>/25</option><?php endforeach; ?>
 </select></label><label>Entidad para captura manual<input name="entity" maxlength="180"></label>
 <label>Año<input name="year" type="number" min="2000" max="2100" value="<?= e(date('Y')) ?>" required></label>
 <label>Riesgo<select name="risk"><?php options(LEVELS); ?></select></label>
