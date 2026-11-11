@@ -50,7 +50,7 @@ if ($pdo->query('SELECT DATABASE()')->fetchColumn() !== 'auditpro_test') {
 }
 foreach (array_merge(['schema.sql'],array_map(
     static fn(int $number): string => sprintf('upgrade-%03d.sql',$number),
-    range(2,24)
+    range(2,25)
 )) as $migration) {
     $contents = file_get_contents(__DIR__.'/../private/'.$migration);
     if ($contents === false) throw new RuntimeException('Falta '.$migration);
@@ -58,7 +58,7 @@ foreach (array_merge(['schema.sql'],array_map(
         if (trim($sql) !== '') $pdo->exec($sql);
     }
 }
-echo "Migraciones 002–024 y esquema instalados.\n";
+echo "Migraciones 002–025 y esquema instalados.\n";
 foreach (['admin','supervisor','auditor','responsable'] as $role) {
     query($pdo,'INSERT INTO users(email,name,password_hash,role) VALUES (?,?,?,?)',
         [$role.'@example.test',ucfirst($role),password_hash('TestPass123456!',PASSWORD_DEFAULT),$role]);
@@ -160,6 +160,16 @@ check(query($pdo,'SELECT status FROM actions WHERE id=?',
  [$actionId])->fetchColumn()==='cerrada','Aceptación cierra acción con motivo registrado');
 check(nextState($pdo,query($pdo,'SELECT * FROM audits WHERE id=?',[$auditId])->fetch())==='cerrada',
  'Puede cerrar expediente sin acciones adicionales');
+$_POST=['audit_id'=>(string)$auditId,'acceptance_id'=>(string)$acceptId,
+ 'next_review'=>date('Y-m-d',strtotime('+90 days')),'conclusion'=>'Se revisó el control compensatorio'];
+deny(static fn()=>saveRiskAcceptance($pdo,$supervisor,'risk_accept_refresh'),
+ 'El solicitante no revalida su aceptación');
+saveRiskAcceptance($pdo,$admin,'risk_accept_refresh');
+check((int)query($pdo,'SELECT COUNT(*) FROM action_risk_reviews WHERE acceptance_id=?',[$acceptId])->fetchColumn()===1,
+ 'Revisión del riesgo aceptado queda inmutable en el historial');
+check(query($pdo,'SELECT review_on FROM action_risk_acceptances WHERE id=?',[$acceptId])->fetchColumn()===date('Y-m-d',strtotime('+90 days')),
+ 'La siguiente revisión se reprograma con supervisión independiente');
+
 
 // Historial inmutable de atestaciones y separación de responsabilidades.
 query($pdo,"INSERT INTO grc_obligations(framework,reference_code,title,owner_name,review_on)
