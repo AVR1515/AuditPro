@@ -19,6 +19,7 @@ require __DIR__ . '/../private/risk-dashboard.php';
 require __DIR__ . '/../private/escalations.php';
 require __DIR__ . '/../private/recovery.php';
 require __DIR__ . '/../private/reminders.php';
+require __DIR__ . '/../private/unit-access.php';
 
 function check(bool $ok, string $message): void {
     if (!$ok) throw new RuntimeException('FALLÓ: ' . $message);
@@ -44,7 +45,7 @@ if ($pdo->query('SELECT DATABASE()')->fetchColumn() !== 'auditpro_test') {
 }
 foreach (array_merge(['schema.sql'],array_map(
     static fn(int $number): string => sprintf('upgrade-%03d.sql',$number),
-    range(2,18)
+    range(2,19)
 )) as $migration) {
     $contents = file_get_contents(__DIR__.'/../private/'.$migration);
     if ($contents === false) throw new RuntimeException('Falta '.$migration);
@@ -52,7 +53,7 @@ foreach (array_merge(['schema.sql'],array_map(
         if (trim($sql) !== '') $pdo->exec($sql);
     }
 }
-echo "Migraciones 002–018 y esquema instalados.\n";
+echo "Migraciones 002–019 y esquema instalados.\n";
 foreach (['admin','supervisor','auditor','responsable'] as $role) {
     query($pdo,'INSERT INTO users(email,name,password_hash,role) VALUES (?,?,?,?)',
         [$role.'@example.test',ucfirst($role),password_hash('TestPass123456!',PASSWORD_DEFAULT),$role]);
@@ -297,4 +298,37 @@ check(validPassword($newPassword) && password_verify($newPassword,$newHash),
 check($newHash!==$oldHash,'La recuperación invalida el hash de sesiones anteriores');
 check((int)query($pdo,"SELECT COUNT(*) FROM audit_log WHERE event='recuperacion_administrativa'")->fetchColumn()===1,
  'Registra recuperación en bitácora sin guardar el secreto');
+
+// Supervisión restringida: acceso a unidades explícitas y bloqueo por defecto.
+$_POST=['supervisor_id'=>'2','restricted'=>'1'];
+deny(static fn()=>saveUnitGrant($pdo,$supervisor,'unit_scope'),'Supervisor no administra sus permisos');
+saveUnitGrant($pdo,$admin,'unit_scope');
+$restrictedUser=['id'=>2,'role'=>'supervisor','unit_restricted'=>1];
+deny(static fn()=>accessible($pdo,$restrictedUser,$auditId),'Supervisor restringido no accede sin concesión');
+check(!allowedUnit($pdo,$restrictedUser,$unit),'Unidad sin permiso denegada');
+$_POST=['supervisor_id'=>'2','unit_id'=>(string)$unit];
+saveUnitGrant($pdo,$admin,'unit_grant');
+check(allowedUnit($pdo,$restrictedUser,$unit),'Grant autoriza unidad específica');
+check((int)accessible($pdo,$restrictedUser,$auditId)['id']===$auditId,'Supervisor ve expediente vinculado a su unidad');
+$filtered=planRows($pdo,$restrictedUser,['year'=>'','status'=>'','risk'=>'','q'=>'']);
+check(count($filtered)===1,'Listado filtra expedientes al ámbito permitido');
+query($pdo,"INSERT INTO auditable_units(name,process_name,accountable,cycle_months) VALUES ('Unidad B','Otra','Gerencia',12)");
+$otherUnit=(int)$pdo->lastInsertId();
+query($pdo,"INSERT INTO risk_assessments(unit_id,assessor_id,methodology,likelihood,impact,score,rating,rationale)
+ VALUES (?,2,'P×I v1',3,3,9,'medio','Prueba')",[$otherUnit]);
+$otherAssessment=(int)$pdo->lastInsertId();
+query($pdo,"INSERT INTO audits(title,entity,objective,year,risk,owner_id)
+ VALUES ('Auditoría privada','Unidad B','Alcance reservado',?,'medio',3)",[(int)date('Y')]);
+$otherAudit=(int)$pdo->lastInsertId();
+query($pdo,'INSERT INTO audit_assessment_links(audit_id,assessment_id) VALUES (?,?)',[$otherAudit,$otherAssessment]);
+deny(static fn()=>accessible($pdo,$restrictedUser,$otherAudit),'Supervisor no ve otra unidad');
+check(count(planRows($pdo,$restrictedUser,['year'=>'','status'=>'','risk'=>'','q'=>'']))===1,
+ 'Listado no filtra información de otras unidades');
+$_POST=['supervisor_id'=>'2','unit_id'=>(string)$unit];
+saveUnitGrant($pdo,$admin,'unit_revoke');
+deny(static fn()=>accessible($pdo,$restrictedUser,$auditId),'Revocación se aplica inmediatamente');
+$_POST=['supervisor_id'=>'2','restricted'=>'0'];
+saveUnitGrant($pdo,$admin,'unit_scope');
+check(allowedAudit($pdo,['id'=>2,'role'=>'supervisor','unit_restricted'=>0],$otherAudit),
+ 'Desactivar restricción recupera acceso global del supervisor');
 echo "TODAS LAS PRUEBAS DE HUMO PASARON.\n";
