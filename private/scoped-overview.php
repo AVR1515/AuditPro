@@ -113,3 +113,19 @@ function scopedObligations(PDO $pdo,array $user): array {
         JOIN supervisor_unit_grants g ON g.unit_id=r.unit_id AND g.user_id=?
         ORDER BY o.framework,o.reference_code,o.id',[(int)$user['id']])->fetchAll();
 }
+
+/** Plan operativo visible solo para expedientes vinculados a unidades concedidas. */
+function scopedAnnualPlanning(PDO $pdo,array $user): array {
+    if (!restrictedSupervisor($user)) throw new DomainException('La vista requiere ámbito restringido.');
+    return query($pdo,'SELECT d.id,d.title,d.year,d.status,d.risk,u.name AS auditor,
+        COALESCE(s.planned_minutes,0) AS planned_minutes,
+        COALESCE((SELECT SUM(h.minutes) FROM audit_time h WHERE h.audit_id=d.id),0) AS worked_minutes
+        FROM audits d JOIN users u ON u.id=d.owner_id
+        LEFT JOIN audit_schedule s ON s.audit_id=d.id
+        WHERE EXISTS (
+            SELECT 1 FROM audit_assessment_links l
+            JOIN risk_assessments a ON a.id=l.assessment_id
+            JOIN supervisor_unit_grants g ON g.unit_id=a.unit_id AND g.user_id=?
+            WHERE l.audit_id=d.id
+        ) ORDER BY d.year DESC,d.id DESC',[(int)$user['id']])->fetchAll();
+}
