@@ -4,6 +4,13 @@ $checks=$readiness['preflight'];
 $cron=$readiness['scheduler'];
 $stats=$readiness['retention'];
 $pending=$readiness['operations'];
+$declared=pilotGateHistory($pdo,$user);
+$latestByGate=[];
+foreach ($declared as $entry) {
+    $key=$entry['gate_key'].':'.$entry['reviewer_role'];
+    if (!isset($latestByGate[$key])) $latestByGate[$key]=$entry;
+}
+
 ?>
 <section><h2>Preparación para el piloto y producción</h2>
 <p class="muted">Este panel es de solo lectura y no autoriza el lanzamiento. El código en GitHub, los controles técnicos locales y las aprobaciones del entorno real se verifican por separado.</p>
@@ -15,6 +22,18 @@ $pending=$readiness['operations'];
 <div><dt>Aceptaciones pendientes</dt><dd><?= e($pending['risk_pending']) ?></dd></div>
 <div><dt>Excepciones pendientes</dt><dd><?= e($pending['exceptions_pending']) ?></dd></div>
 </dl>
+<h3>Declaraciones de las siete verificaciones</h3>
+<p class="muted">Son resultados declarados por los roles responsables, no una certificación independiente de producción. La aceptación requiere revisar las referencias, el SHA exacto y los controles externos.</p>
+<div class="table"><table><thead><tr><th scope="col">Control</th><th scope="col">Rol responsable</th><th scope="col">Última declaración</th></tr></thead><tbody>
+<?php foreach (PILOT_GATES as $gate=>$roles): foreach ($roles as $reviewerRole):
+$declaration=$latestByGate[$gate.':'.$reviewerRole] ?? null;
+?><tr><td><?= e(PILOT_GATE_NAMES[$gate]) ?></td>
+<td><?= e($reviewerRole) ?></td>
+<td><?= !$declaration?'Sin evidencia registrada':(
+    ($declaration['result']==='cumple'?'Conforme declarado':'Incidencia declarada').
+    ' · '.e(substr($declaration['version_sha'],0,12)).' · '.e($declaration['reviewed_at'])) ?></td>
+</tr><?php endforeach; endforeach; ?></tbody></table></div>
+<p><a href="index.php?view=pilot-signoffs">Registrar y consultar evidencias del piloto</a>.</p>
 <h3>Controles técnicos de esta instalación</h3>
 <div class="table"><table><thead><tr><th scope="col">Comprobación</th><th scope="col">Resultado</th></tr></thead><tbody>
 <?php foreach ($checks as $check): ?><tr><td><?= e($check['description']) ?></td>
