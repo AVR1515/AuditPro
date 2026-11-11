@@ -19,6 +19,7 @@ require __DIR__ . '/../private/capacity.php';
 require __DIR__ . '/../private/risk-acceptance.php';
 require __DIR__ . '/../private/attestations.php';
 require __DIR__ . '/../private/exceptions.php';
+require __DIR__ . '/../private/multiyear.php';
 start();
 $error = null;
 $user = null;
@@ -94,6 +95,11 @@ try {
             saveGrc($pdo,$user,$op);
             $pdo->commit();
             redirect('index.php?view=grc');
+        }
+        if (in_array($op,MULTIYEAR_OPS,true)) {
+            saveMultiyear($pdo,$user,$op);
+            $pdo->commit();
+            redirect('index.php?view=plans');
         }
         if ($op === 'save_capacity') {
             saveAuditorCapacity($pdo,$user);
