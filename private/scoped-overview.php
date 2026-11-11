@@ -94,3 +94,21 @@ function scopedControlTests(PDO $pdo,array $user): array {
     }
     return $result;
 }
+
+/**
+ * Solo obligaciones que se relacionan con un control asociado a riesgos
+ * de unidades concedidas. Nunca comparte obligaciones por el mero título
+ * del control ni devuelve vínculos a unidades externas.
+ */
+function scopedObligations(PDO $pdo,array $user): array {
+    if (!restrictedSupervisor($user)) throw new DomainException('La vista requiere ámbito restringido.');
+    return query($pdo,'SELECT DISTINCT o.id,o.framework,o.reference_code,o.title,o.owner_name,
+        COALESCE((SELECT a.next_review_on FROM obligation_attestations a
+            WHERE a.obligation_id=o.id ORDER BY a.id DESC LIMIT 1),o.review_on) AS next_review
+        FROM grc_obligations o
+        JOIN grc_obligation_controls oc ON oc.obligation_id=o.id
+        JOIN grc_risk_controls rc ON rc.control_id=oc.control_id
+        JOIN grc_risks r ON r.id=rc.risk_id
+        JOIN supervisor_unit_grants g ON g.unit_id=r.unit_id AND g.user_id=?
+        ORDER BY o.framework,o.reference_code,o.id',[(int)$user['id']])->fetchAll();
+}
