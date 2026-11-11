@@ -9,7 +9,7 @@ function riskDashboard(PDO $pdo, int $year): array {
     foreach ($coverage as $unit) {
         if ($unit['rating']===null) $missing++;
         if (in_array($unit['rating'],['alto','critico'],true)) $high++;
-        if (coverageStatus($unit,$year)!=='Dentro del ciclo aproximado') {
+        if (coverageNeedsReview($unit,$year)) {
             $gaps++;
             if (in_array($unit['rating'],['alto','critico'],true)) $highGaps++;
         }
