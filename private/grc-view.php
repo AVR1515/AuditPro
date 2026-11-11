@@ -6,6 +6,7 @@ $risks = $riskAccess ? $pdo->query('SELECT r.*,u.name AS unit FROM grc_risks r J
 $controls = $pdo->query('SELECT * FROM grc_controls ORDER BY title,id')->fetchAll();
 $obligations = $complianceAccess ? $pdo->query('SELECT * FROM grc_obligations ORDER BY review_on,id')->fetchAll() : [];
 $attestations = $complianceAccess ? obligationAttestations($pdo) : [];
+$exceptions = $complianceAccess ? complianceExceptions($pdo) : [];
 $eligibleTests = $manager ? $pdo->query("SELECT t.id,CONCAT(d.title,' / ',t.title) AS name FROM tests t JOIN audits d ON d.id=t.audit_id WHERE d.status IN ('en_campo','en_revision') ORDER BY d.title,t.id")->fetchAll() : [];
 $mappings = grcMappings($pdo,$user);
 ?>
@@ -35,6 +36,42 @@ $mappings = grcMappings($pdo,$user);
 <?php foreach ($history as $entry): ?><p class="copy"><strong><?= e($entry['author_name']) ?> · <?= e($entry['reviewed_on']) ?> · <?= e($entry['result']) ?></strong>
 <?= e($entry['rationale']) ?> · Evidencia: <?= e($entry['evidence_reference']) ?> · Próxima: <?= e($entry['next_review_on']) ?></p><?php endforeach; ?>
 </details><?php endif; ?>
+<?php $exceptionHistory = $exceptions[$obligation['id']] ?? []; ?>
+<?php if ($exceptionHistory): ?><details><summary>Excepciones registradas (<?= count($exceptionHistory) ?>)</summary>
+<?php foreach ($exceptionHistory as $exception): ?>
+<article id="exception-<?= e($exception['id']) ?>">
+<h4><?= e($exception['title']) ?> · <?= e($exception['status']) ?></h4>
+<p>Solicitada por <?= e($exception['requester_name']) ?> · Expira <?= e($exception['expires_on']) ?>
+<?php if ($exception['status']==='aprobada' && $exception['expires_on']<date('Y-m-d')): ?> · Vencida<?php endif; ?></p>
+<?php copyBlock('Motivo',$exception['rationale']); ?>
+<?php copyBlock('Controles mitigantes',$exception['mitigating_controls']); ?>
+<?php if ($exception['decider_name']): ?>
+<p class="muted">Revisada por <?= e($exception['decider_name']) ?> · <?= e($exception['decided_at']) ?></p>
+<?php copyBlock('Decisión',$exception['decision_note']); ?>
+<?php endif; ?>
+<?php if ($exception['closer_name']): ?>
+<p class="muted">Cerrada por <?= e($exception['closer_name']) ?> · <?= e($exception['closed_at']) ?></p>
+<?php copyBlock('Motivo de cierre',$exception['closure_note']); ?>
+<?php endif; ?>
+<?php if ($manager && $exception['status']==='pendiente' && (int)$exception['requested_by']!==(int)$user['id'] && $exception['expires_on']>date('Y-m-d')): ?>
+<?php form('exception_decide',['obligation_id'=>$obligation['id'],'exception_id'=>$exception['id']]); ?>
+<label>Decisión<select name="decision"><option value="aprobada">Aprobar</option><option value="rechazada">Rechazar</option></select></label>
+<label>Fundamento<textarea name="decision_note" maxlength="12000" required></textarea></label>
+<button>Registrar decisión independiente</button></form>
+<?php endif; ?>
+<?php if ($manager && $exception['status']==='aprobada'): ?>
+<?php form('exception_close',['obligation_id'=>$obligation['id'],'exception_id'=>$exception['id']]); ?>
+<label>Justificación de cierre<textarea name="closure_note" maxlength="12000" required></textarea></label>
+<button>Cerrar excepción</button></form>
+<?php endif; ?>
+</article><?php endforeach; ?></details><?php endif; ?>
+<details><summary>Solicitar excepción de cumplimiento</summary>
+<?php form('exception_request',['obligation_id'=>$obligation['id']]); ?>
+<label>Motivo o nombre<input name="title" maxlength="180" required></label>
+<label>Justificación<textarea name="rationale" maxlength="12000" required></textarea></label>
+<label>Controles mitigantes<textarea name="mitigating" maxlength="12000" required></textarea></label>
+<label>Fecha de expiración<input name="expires" type="date" min="<?= e(date('Y-m-d',strtotime('+1 day'))) ?>" required></label>
+<button>Registrar solicitud</button></form></details>
 <details><summary>Nueva atestación</summary><?php form('obligation_attest',['obligation_id'=>$obligation['id']]); ?>
 <label>Conclusión<select name="result"><option value="cumple">Cumple</option><option value="parcial">Cumple parcialmente</option><option value="no_cumple">No cumple</option><option value="no_aplica">No aplica</option></select></label>
 <label>Referencia de evidencia<textarea name="evidence" maxlength="12000" required></textarea></label>
