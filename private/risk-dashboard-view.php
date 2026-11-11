@@ -10,6 +10,7 @@ $dash=riskDashboard($pdo,(int)date('Y'));
 <div><dt>Riesgos sobre apetito</dt><dd><?= e($dash['above_appetite']) ?></dd></div>
 <div><dt>Revisiones de riesgo vencidas</dt><dd><?= e($dash['overdue_reviews']) ?></dd></div>
 <div><dt>Alertas KRI vigentes</dt><dd><?= e($dash['kri_breaches']) ?></dd></div>
+<div><dt>KRI sin medición reciente</dt><dd><?= e($dash['kri_stale']) ?></dd></div>
 </dl>
 <details><summary>Ver unidades y brechas por prioridad</summary>
 <?php if (!$dash['coverage']): ?><p class="muted">No se han creado unidades auditables.</p><?php else: ?>
