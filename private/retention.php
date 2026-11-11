@@ -49,3 +49,24 @@ function saveRetention(PDO $pdo, array $user, string $op): void {
     }
     throw new DomainException('Operación de retención no autorizada.');
 }
+
+/** Resumen de retención sobre el conjunto completo, sin el límite visual de 250 archivos. */
+function retentionReadiness(PDO $pdo, DateTimeImmutable $today): array {
+    return query($pdo,"SELECT
+      COUNT(*) AS total,
+      COALESCE(SUM(b.purged_at IS NOT NULL),0) AS purged,
+      COALESCE(SUM(b.purged_at IS NULL AND b.legal_hold=1),0) AS legal_holds,
+      COALESCE(SUM(b.purged_at IS NULL AND b.retention_until IS NULL),0) AS indefinite,
+      COALESCE(SUM(b.purged_at IS NULL AND b.legal_hold=0 AND b.retention_until<?
+        AND DATE_ADD(DATE(b.created_at),INTERVAL 365 DAY)<?
+        AND d.status='cerrada'),0) AS eligible,
+      COALESCE(SUM(b.purged_at IS NULL AND b.retention_until>=?
+        AND b.retention_until<=DATE_ADD(?,INTERVAL 30 DAY)),0) AS upcoming
+      FROM attachments b
+      LEFT JOIN tests t ON t.id=b.test_id
+      LEFT JOIN actions a ON a.id=b.action_id
+      LEFT JOIN findings f ON f.id=a.finding_id
+      LEFT JOIN tests at ON at.id=f.test_id
+      JOIN audits d ON d.id=COALESCE(t.audit_id,at.audit_id)",
+      array_fill(0,4,$today->format('Y-m-d')))->fetch();
+}
