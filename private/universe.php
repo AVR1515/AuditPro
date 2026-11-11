@@ -43,6 +43,7 @@ function unitCoverage(PDO $pdo): array {
     return $pdo->query("SELECT u.id,u.name,u.process_name,u.cycle_months,
         r.rating,r.score,r.created_at AS assessed_at,
         MAX(a.year) AS last_audit_year,
+        MAX(CASE WHEN a.status='cerrada' THEN a.closed_on ELSE NULL END) AS last_closed_on,
         COUNT(DISTINCT a.id) AS audit_count,
         COUNT(DISTINCT CASE WHEN a.status='cerrada' THEN a.id END) AS closed_count
         FROM auditable_units u
@@ -57,7 +58,15 @@ function unitCoverage(PDO $pdo): array {
 }
 
 function coverageStatus(array $row, int $year): string {
+    if (!empty($row['last_closed_on'])) {
+        $closed=DateTimeImmutable::createFromFormat('!Y-m-d',(string)$row['last_closed_on']);
+        if ($closed) {
+            $boundary=$closed->modify('+'.(int)$row['cycle_months'].' months');
+            return $boundary < new DateTimeImmutable('today') ? 'Revisión de cobertura requerida' : 'Dentro del ciclo verificado';
+        }
+    }
     if ($row['last_audit_year'] === null) return 'Sin auditorías vinculadas';
-    $cycleYears = max(1,(int) ceil(((int) $row['cycle_months']) / 12));
-    return $year-(int) $row['last_audit_year'] >= $cycleYears ? 'Revisión de cobertura requerida' : 'Dentro del ciclo aproximado';
+    $cycleYears=max(1,(int)ceil(((int)$row['cycle_months'])/12));
+    return $year-(int)$row['last_audit_year'] >= $cycleYears ?
+        'Revisión de cobertura requerida (estimación)' : 'Dentro del ciclo aproximado (sin cierre fechado)';
 }
