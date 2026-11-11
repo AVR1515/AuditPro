@@ -58,6 +58,7 @@ grep -q 'Mis unidades y riesgos' "$tmp/scoped.html"
 grep -q 'Liquidez' "$tmp/scoped.html"
 grep -q 'Incidencias' "$tmp/scoped.html"
 grep -q 'Guardar medición' "$tmp/scoped.html"
+grep -q 'Cobertura de auditorías por unidad' "$tmp/scoped.html"
 if grep -q 'Indicador reservado' "$tmp/scoped.html"; then
   echo 'ERROR: KRI de otra unidad expuesto a supervisor restringido' >&2
   exit 1
