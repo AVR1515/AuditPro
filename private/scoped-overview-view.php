@@ -30,10 +30,10 @@ $scopedObligations=scopedObligations($pdo,$user);
 <h3>Cobertura de auditorías por unidad</h3>
 <p class="muted">Las auditorías solo se cuentan cuando están vinculadas a una evaluación de la unidad. El ciclo se estima por años y no sustituye las fechas efectivas de trabajo.</p>
 <?php if ($scopedCoverage): ?>
-<div class="table"><table><thead><tr><th scope="col">Unidad</th><th scope="col">Auditorías vinculadas</th><th scope="col">Último año</th><th scope="col">Ciclo</th><th scope="col">Situación</th></tr></thead><tbody>
+<div class="table"><table><thead><tr><th scope="col">Unidad</th><th scope="col">Auditorías vinculadas</th><th scope="col">Último año</th><th scope="col">Cierre efectivo</th><th scope="col">Ciclo</th><th scope="col">Situación</th></tr></thead><tbody>
 <?php foreach ($scopedCoverage as $coverage): ?>
 <tr><td><?= e($coverage['name']) ?></td><td><?= e($coverage['audit_count']) ?></td>
-<td><?= e($coverage['last_audit_year'] ?? 'Sin registro') ?></td><td><?= e($coverage['cycle_months']) ?> meses</td>
+<td><?= e($coverage['last_audit_year'] ?? 'Sin registro') ?></td><td><?= e($coverage['last_closed_on'] ?? 'Sin fecha') ?></td><td><?= e($coverage['cycle_months']) ?> meses</td>
 <td><?= e(coverageStatus($coverage,(int)date('Y'))) ?></td></tr>
 <?php endforeach; ?></tbody></table></div><?php endif; ?>
 <h3>Riesgos de mis unidades</h3>
