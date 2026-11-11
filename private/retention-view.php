@@ -1,7 +1,17 @@
 <?php
 $attachments=retentionRows($pdo);
+$retentionMetrics=retentionReadiness($pdo,new DateTimeImmutable('today'));
 ?>
 <section><h2>Retención de evidencias</h2>
+<dl class="metrics">
+<div><dt>Archivos registrados</dt><dd><?= e($retentionMetrics['total']) ?></dd></div>
+<div><dt>Con bloqueo legal</dt><dd><?= e($retentionMetrics['legal_holds']) ?></dd></div>
+<div><dt>Conservación indefinida</dt><dd><?= e($retentionMetrics['indefinite']) ?></dd></div>
+<div><dt>Elegibles para purga</dt><dd><?= e($retentionMetrics['eligible']) ?></dd></div>
+<div><dt>Plazo vence en 30 días</dt><dd><?= e($retentionMetrics['upcoming']) ?></dd></div>
+<div><dt>Contenido purgado</dt><dd><?= e($retentionMetrics['purged']) ?></dd></div>
+</dl>
+<p class="muted">Las cifras consideran todos los archivos; el listado inferior muestra únicamente los 250 más recientes. Una cifra elegible no autoriza por sí sola el purgado: se necesita revisión jurídica y respaldo verificado.</p>
 <p class="muted">Administración puede fijar un plazo mínimo de un año y un bloqueo legal. Por defecto, los archivos se conservan indefinidamente. El purgado solo está permitido tras el vencimiento del plazo, sin bloqueo legal y con la auditoría cerrada. Se conserva la huella SHA-256 y la bitácora.</p>
 <?php if (!$attachments): ?><p class="muted">No hay evidencias.</p><?php endif; ?>
 <?php foreach ($attachments as $entry):
