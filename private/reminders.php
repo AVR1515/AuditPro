@@ -23,3 +23,19 @@ function markReminderRead(PDO $pdo, array $user, int $reminder): void {
     query($pdo,'UPDATE action_reminders SET read_at=CURRENT_TIMESTAMP WHERE id=? AND recipient_id=? AND read_at IS NULL',
         [$reminder,$user['id']]);
 }
+
+/** Pronóstico de acciones a notificar, sin crear avisos ni modificar datos. */
+function reminderCandidates(PDO $pdo, DateTimeImmutable $today): array {
+    return query($pdo,"SELECT
+      COALESCE(SUM(a.due_date<?),0) AS overdue,
+      COALESCE(SUM(a.due_date>=? AND a.due_date<=?),0) AS approaching
+      FROM actions a
+      JOIN findings f ON f.id=a.finding_id
+      JOIN tests t ON t.id=f.test_id
+      JOIN audits d ON d.id=t.audit_id
+      JOIN users u ON u.id=a.owner_id
+      WHERE a.status='abierta' AND d.status='emitida'
+        AND u.active=1 AND u.role='responsable'",
+      [$today->format('Y-m-d'),$today->format('Y-m-d'),
+       $today->modify('+7 days')->format('Y-m-d')])->fetch();
+}
