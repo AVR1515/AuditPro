@@ -56,6 +56,12 @@ curl --fail --silent --show-error -b "$supervisorCookies" \
   "$BASE_URL/index.php?view=my-units" > "$tmp/scoped.html"
 grep -q 'Mis unidades y riesgos' "$tmp/scoped.html"
 grep -q 'Liquidez' "$tmp/scoped.html"
+grep -q 'Incidencias' "$tmp/scoped.html"
+grep -q 'Registrar medición' "$tmp/scoped.html"
+if grep -q 'Indicador reservado' "$tmp/scoped.html"; then
+  echo 'ERROR: KRI de otra unidad expuesto a supervisor restringido' >&2
+  exit 1
+fi
 if grep -q 'Riesgo B' "$tmp/scoped.html"; then
   echo 'ERROR: riesgo fuera del ámbito expuesto a supervisor restringido' >&2
   exit 1
