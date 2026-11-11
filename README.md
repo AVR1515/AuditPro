@@ -78,6 +78,10 @@ En **Plan anual**, supervisión crea horizontes de dos a cinco años, programa u
 
 Riesgos y Supervisión pueden revisar el riesgo residual y definir la siguiente fecha de revisión, conservando la puntuación previa y el motivo en `grc_risk_reviews`. También pueden definir indicadores KRI con umbral máximo o mínimo, registrar mediciones fechadas con evidencia y consultar su historial. La última medición determina la alerta mostrada en el registro de riesgos y en la bandeja de supervisión. Los indicadores se archivan sin borrar mediciones. Ejecuta `private/upgrade-017.sql` después de 016; concede SELECT e INSERT en `grc_risk_reviews` y `grc_kri_observations`, y SELECT, INSERT y UPDATE en `grc_kri_indicators`, además de UPDATE en `grc_risks` para modificar su residual y fecha de revisión.
 
+## Tablero ejecutivo de riesgos y cobertura
+
+La sección **Plan anual** incluye un tablero de supervisión con brechas del universo auditable, brechas de unidades de riesgo alto o crítico, riesgos residuales sobre apetito, revisiones vencidas e indicadores KRI fuera de umbral. Los cálculos de cobertura usan los expedientes vinculados a las evaluaciones del universo y el ciclo anual aproximado; no se interpretan como un dictamen de suficiencia de auditoría. El tablero no requiere una migración adicional a `upgrade-017.sql`.
+
 ## XAMPP en localhost
 
 Si el proyecto completo está en `C:/xampp/htdocs/auditpro`, abre `http://localhost/auditpro/`. Apache redirige a `public/`. Los archivos `.htaccess` incluidos requieren `AllowOverride All` y bloquean el listado de carpetas, `private/` y los metadatos de Git. Conserva estos archivos al copiar o descomprimir el proyecto.
