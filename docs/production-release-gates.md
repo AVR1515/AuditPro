@@ -1,6 +1,6 @@
 # AuditPro — puertas de liberación a producción
 
-Estado inicial: **NO APROBADO**. El código en `main` y las pruebas automáticas
+Estado inicial: **NO APROBADO**. Las declaraciones por rol se registran en **Evidencias del piloto** (migración 028), identificadas por SHA completo y acta. Una declaración no sustituye la revisión de la evidencia ni las firmas externas. El código en `main` y las pruebas automáticas
 no prueban por sí solos que AuditPro sea seguro para operar con datos reales.
 
 ## Puerta 1 — Alcance y roles (roadmap 01 y 19)
@@ -18,6 +18,7 @@ no prueban por sí solos que AuditPro sea seguro para operar con datos reales.
 - [ ] Jurídico/DPO aprueba el plazo mínimo y las excepciones de conservación de la organización.
 - [ ] Se verifica un respaldo y una restauración completos, incluidos BLOB y SHA-256.
 - [ ] Se comprueba que un bloqueo legal impide purgar; que el purgado se audita y no permite descarga.
+- [ ] Una segunda cuenta administradora autoriza o rechaza la solicitud de purgado; una autorización antigua o cancelada no permite borrar contenido.
 - [ ] Se establece y documenta el ciclo de vida de copias de respaldo, incluso cuando un contenido ha sido purgado.
 
 **Evidencia requerida:** política aprobada, acta jurídica y bitácora de restauración.
@@ -27,13 +28,14 @@ no prueban por sí solos que AuditPro sea seguro para operar con datos reales.
 - [ ] Supervisión recorre la creación, evidencia, prórroga, devolución, verificación y cierre de una acción.
 - [ ] Se revalida un riesgo aceptado mediante una cuenta distinta del solicitante y se conserva el historial.
 - [ ] Se prueba `php private/remind.php --dry-run` y la tarea programada real, sin avisos duplicados.
+- [ ] Administración confirma en «Preparación del lanzamiento» que el último éxito del proceso es reciente (máximo 36 horas).
 - [ ] Se verifica el tratamiento de prórrogas, acciones cerradas, escalaciones y buzones de destinatarios reales.
 
 **Evidencia requerida:** registro por rol, fecha y captura auténtica de la aplicación.
 
 ## Puerta 4 — Piloto visual y funcional (roadmap 17)
 
-- [ ] Instalar en el entorno piloto mediante migraciones hasta la 025 y ejecutar `private/preflight-cli.php`.
+- [ ] Instalar en el entorno piloto mediante migraciones hasta la 028 y ejecutar `private/preflight-cli.php`.
 - [ ] Revisar contraste, navegación con teclado, lectores de pantalla y formularios con errores.
 - [ ] Adjuntar capturas **reales** (no diseños generados) de login, expedientes, KRI, GRC, políticas, bandeja, permisos por unidad y retención.
 - [ ] Documentar incidentes críticos, responsables y su solución; obtener la aceptación del dueño del proceso.
@@ -61,4 +63,4 @@ no prueban por sí solos que AuditPro sea seguro para operar con datos reales.
 - **Decisión:** [ ] Aprobado [ ] Rechazado [ ] Pendiente
 - **Evidencias y enlace a incidentes:** ______________________
 
-**Cualquier casilla pendiente mantiene la liberación pendiente.**
+**Cualquier casilla pendiente mantiene la liberación pendiente.** Las declaraciones de la aplicación se revisan por separado junto con actas firmadas y el SHA efectivamente instalado.
