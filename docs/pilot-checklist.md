@@ -26,6 +26,7 @@ Este documento no certifica el despliegue ni reemplaza la aprobación del equipo
 - [ ] **Supervisor restringido:** consulta «Mis unidades y riesgos» y confirma que no aparecen riesgos de otras unidades.
 - [ ] **Supervisor restringido:** actualiza un residual y mide un KRI autorizado; confirma que IDs manipulados de otra unidad no modifican datos.
 - [ ] **Supervisor restringido:** revisa la cobertura histórica de sus unidades y verifica que la tabla no contenga unidades ajenas.
+- [ ] **Controles compartidos:** vincular un mismo control a riesgos de dos unidades; el supervisor restringido ve el control de su riesgo pero no las pruebas del expediente ajeno ni controles exclusivos de otra unidad.
 - [ ] **Supervisor restringido:** no puede crear ni archivar indicadores globales.
 - [ ] **Riesgos:** mide KRI, revisa el riesgo residual y verifica alertas cuando hay exceso de umbral.
 
