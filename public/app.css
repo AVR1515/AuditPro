@@ -53,3 +53,8 @@ th,td{text-align:left;padding:.65rem;border-bottom:1px solid var(--line)}
 @media print{.no-print{display:none}.report{padding:0;border:0}.report article{break-inside:avoid}}
 .plan-metrics{border:1px solid var(--line);border-radius:.6rem;padding:.65rem 1rem;margin:1rem 0}
 .plan-metrics ul{padding-left:1.25rem}
+
+/* Acceso teclado y contraste: salto visible y reducción de movimiento. */
+.skip-link{position:absolute;top:-6rem;left:1rem;z-index:1000;background:var(--panel);color:var(--text);border:2px solid var(--link);padding:.55rem 1rem;border-radius:.45rem}
+.skip-link:focus-visible{top:.5rem}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;animation-duration:.01ms!important;transition-duration:.01ms!important}}
