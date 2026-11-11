@@ -105,7 +105,7 @@ function page(string $title, ?array $user = null): void { ?>
 <?php
 $sections = isGrcSpecialist($user) ? ['grc'=>'Riesgos y cumplimiento'] : [''=>'Expedientes','inbox'=>'Bandeja'];
 if (manage($user) && !($user['role']==='supervisor' && (int)($user['unit_restricted'] ?? 0)===1)) $sections += ['plans'=>'Plan anual','universe'=>'Universo auditable','grc'=>'Riesgos y cumplimiento'];
-if ($user['role']==='admin') { $sections['unit-access']='Acceso por unidad'; $sections['retention']='Retención de evidencias'; }
+if ($user['role']==='admin') { $sections['unit-access']='Acceso por unidad'; $sections['retention']='Retención de evidencias'; $sections['readiness']='Preparación del lanzamiento'; }
 if ($user['role']==='supervisor' && (int)($user['unit_restricted'] ?? 0)===1) $sections['my-units']='Mis unidades y riesgos';
 if ($user['role'] === 'auditor' || (manage($user) && !($user['role']==='supervisor' && (int)($user['unit_restricted'] ?? 0)===1))) $sections['templates'] = 'Plantillas de pruebas';
 if (in_array($user['role'],['admin','supervisor','cumplimiento'],true) && !($user['role']==='supervisor' && (int)($user['unit_restricted'] ?? 0)===1)) $sections['policies']='Políticas';
