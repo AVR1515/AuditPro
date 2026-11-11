@@ -15,6 +15,7 @@ require __DIR__ . '/../private/exceptions.php';
 require __DIR__ . '/../private/multiyear.php';
 require __DIR__ . '/../private/kri.php';
 require __DIR__ . '/../private/inbox.php';
+require __DIR__ . '/../private/risk-dashboard.php';
 
 function check(bool $ok, string $message): void {
     if (!$ok) throw new RuntimeException('FALLÓ: ' . $message);
@@ -235,4 +236,10 @@ $_POST=['risk_id'=>(string)$riskId,'indicator_id'=>(string)$kriId];
 deny(static fn()=>saveKri($pdo,$auditor,'kri_archive'),'Auditor no archiva indicadores');
 saveKri($pdo,$admin,'kri_archive');
 check(count(breachedKriInbox($pdo))===0,'Indicador archivado deja de alertar');
+
+$dashboard=riskDashboard($pdo,(int)date('Y'));
+check($dashboard['units']===1 && $dashboard['risks']===1,'Tablero cuenta unidades y riesgos');
+check($dashboard['above_appetite']===1,'Tablero reconoce riesgo por encima del apetito');
+check($dashboard['kri_breaches']===0,'Tablero excluye indicadores archivados');
+check($dashboard['gaps']===0,'Tablero no marca brecha en auditoría del año actual');
 echo "TODAS LAS PRUEBAS DE HUMO PASARON.\n";
