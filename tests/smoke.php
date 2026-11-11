@@ -337,6 +337,51 @@ query($pdo,'INSERT INTO audit_assessment_links(audit_id,assessment_id) VALUES (?
 deny(static fn()=>accessible($pdo,$restrictedUser,$otherAudit),'Supervisor no ve otra unidad');
 query($pdo,"INSERT INTO grc_risks(unit_id,title,owner_name,inherent,residual,appetite,treatment,review_on) VALUES (?,'Riesgo B','Área B',12,10,8,'Control',?)",[$otherUnit,date('Y-m-d',strtotime('+10 days'))]);
 check(count(scopedRiskOverview($pdo,$restrictedUser))===1,'No expone riesgos de otras unidades');
+$authorizedRisk=(int)query($pdo,'SELECT id FROM grc_risks WHERE unit_id=? ORDER BY id DESC LIMIT 1',[$unit])->fetchColumn();
+$foreignRisk=(int)query($pdo,'SELECT id FROM grc_risks WHERE unit_id=? ORDER BY id DESC LIMIT 1',[$otherUnit])->fetchColumn();
+$_POST=['risk_id'=>(string)$foreignRisk,'residual'=>'4','reviewed_on'=>date('Y-m-d'),
+ 'next_review_on'=>date('Y-m-d',strtotime('+25 days')),'note'=>'Acceso indebido'];
+deny(static fn()=>saveKri($pdo,$restrictedUser,'risk_review'),
+ 'Supervisor no revisa riesgo de otra unidad');
+check((int)query($pdo,'SELECT residual FROM grc_risks WHERE id=?',[$foreignRisk])->fetchColumn()===10,
+ 'Riesgo ajeno no se modifica');
+$_POST=['risk_id'=>(string)$authorizedRisk,'residual'=>'9','reviewed_on'=>date('Y-m-d'),
+ 'next_review_on'=>date('Y-m-d',strtotime('+25 days')),'note'=>'Evaluación autorizada'];
+saveKri($pdo,$restrictedUser,'risk_review');
+check((int)query($pdo,'SELECT residual FROM grc_risks WHERE id=?',[$authorizedRisk])->fetchColumn()===9,
+ 'Supervisor revisa riesgo de unidad concedida');
+$_POST=['risk_id'=>(string)$authorizedRisk,'title'=>'KRI no permitido',
+ 'unit'=>'%','direction'=>'maximo','threshold'=>'2'];
+deny(static fn()=>saveKri($pdo,$restrictedUser,'kri_create'),
+ 'Supervisor restringido no crea indicadores globales');
+$_POST=['risk_id'=>(string)$authorizedRisk,'title'=>'Incidencias','unit'=>'%',
+ 'direction'=>'maximo','threshold'=>'3'];
+saveKri($pdo,$admin,'kri_create');
+$authorizedKri=(int)query($pdo,'SELECT MAX(id) FROM grc_kri_indicators WHERE risk_id=?',[$authorizedRisk])->fetchColumn();
+$_POST=['risk_id'=>(string)$foreignRisk,'title'=>'Indicador reservado','unit'=>'%',
+ 'direction'=>'maximo','threshold'=>'4'];
+saveKri($pdo,$admin,'kri_create');
+$foreignKri=(int)query($pdo,'SELECT MAX(id) FROM grc_kri_indicators WHERE risk_id=?',[$foreignRisk])->fetchColumn();
+$scopedIndicators=scopedRiskIndicators($pdo,$restrictedUser);
+check(count($scopedIndicators[$authorizedRisk]??[])===1 && empty($scopedIndicators[$foreignRisk]),
+ 'Solo muestra KRI de unidad concedida');
+$_POST=['risk_id'=>(string)$foreignRisk,'indicator_id'=>(string)$foreignKri,
+ 'observed_on'=>date('Y-m-d'),'value'=>'8','evidence'=>'Intento ajeno'];
+deny(static fn()=>saveKri($pdo,$restrictedUser,'kri_measure'),
+ 'Supervisor no mide indicadores fuera de unidad');
+$_POST=['risk_id'=>(string)$authorizedRisk,'indicator_id'=>(string)$foreignKri,
+ 'observed_on'=>date('Y-m-d'),'value'=>'8','evidence'=>'Indicador ajeno'];
+deny(static fn()=>saveKri($pdo,$restrictedUser,'kri_measure'),
+ 'No permite sustituir el riesgo autorizado por un indicador ajeno');
+$_POST=['risk_id'=>(string)$authorizedRisk,'indicator_id'=>(string)$authorizedKri,
+ 'observed_on'=>date('Y-m-d'),'value'=>'5','evidence'=>'Seguimiento local'];
+saveKri($pdo,$restrictedUser,'kri_measure');
+check((int)query($pdo,'SELECT COUNT(*) FROM grc_kri_observations WHERE indicator_id=?',[$authorizedKri])->fetchColumn()===1,
+ 'Supervisor registra medición en KRI autorizado');
+$_POST=['risk_id'=>(string)$authorizedRisk,'indicator_id'=>(string)$authorizedKri];
+deny(static fn()=>saveKri($pdo,$restrictedUser,'kri_archive'),
+ 'Supervisor restringido no archiva indicadores');
+
 check(count(planRows($pdo,$restrictedUser,['year'=>'','status'=>'','risk'=>'','q'=>'']))===1,
  'Listado no filtra información de otras unidades');
 $_POST=['supervisor_id'=>'2','unit_id'=>(string)$unit];
