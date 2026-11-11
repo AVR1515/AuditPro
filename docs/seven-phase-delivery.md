@@ -17,7 +17,7 @@ usuarios, la evaluación legal, las copias restauradas o la seguridad del servid
 
 ## Verificación automática
 
-- `tests/smoke.php` monta el esquema limpio, migraciones 002–024 y comprueba los flujos en MySQL 8 temporal.
+- `tests/smoke.php` monta el esquema limpio, migraciones 002–028 y comprueba los flujos en MySQL 8 temporal.
 - `tests/http-smoke.sh` valida autenticación, CSRF, rutas privadas y ausencia de datos ajenos en la interfaz del supervisor restringido.
 - `.github/workflows/php-lint.yml` verifica sintaxis PHP y requisitos de migración.
 
@@ -32,6 +32,6 @@ usuarios, la evaluación legal, las copias restauradas o la seguridad del servid
 
 Aplicar, por este orden y después de respaldar la base, las migraciones
 `private/upgrade-022.sql`, `private/upgrade-023.sql` y
-`private/upgrade-024.sql`. Revisar permisos SQL mínimos del README y ejecutar
+`private/upgrade-024.sql`, `private/upgrade-025.sql`, `private/upgrade-026.sql`, `private/upgrade-027.sql` y `private/upgrade-028.sql`. Revisar permisos SQL mínimos del README y ejecutar
 `php private/preflight-cli.php`. No ejecutar el script de humo contra bases
 de producción.
