@@ -102,11 +102,15 @@ Administración configura por archivo fechas de conservación (mínimo 365 días
 
 ## Preparación del piloto (fase 3)
 
-Ejecuta `php private/preflight-cli.php` desde el servidor configurado con `AUDITPRO_CONFIG`. Este comando no modifica la base de datos ni imprime contraseñas: comprueba PHP/extensiones, conexión, instalación, esquema hasta `upgrade-020.sql`, credenciales temporales deshabilitadas y configuración de aplicación. Un diagnóstico exitoso **no significa que el sistema esté aprobado para producción**. Completa los escenarios del archivo [docs/pilot-checklist.md](docs/pilot-checklist.md), validación de HTTPS, restauración real, accesibilidad y controles de autorización con usuarios reales.
+Ejecuta `php private/preflight-cli.php` desde el servidor configurado con `AUDITPRO_CONFIG`. Este comando no modifica la base de datos ni imprime contraseñas: comprueba PHP/extensiones, conexión, instalación, esquema hasta `upgrade-021.sql`, credenciales temporales deshabilitadas y configuración de aplicación. Un diagnóstico exitoso **no significa que el sistema esté aprobado para producción**. Completa los escenarios del archivo [docs/pilot-checklist.md](docs/pilot-checklist.md), validación de HTTPS, restauración real, accesibilidad y controles de autorización con usuarios reales.
 
 ## Políticas de cumplimiento versionadas (upgrade-021)
 
 El módulo **Políticas** permite a Cumplimiento y Supervisión crear políticas, generar versiones textuales y vincular obligaciones. Una versión pendiente puede modificarse solo mediante sus vínculos; el texto se conserva como instantánea. No puede abrirse otra versión mientras exista una pendiente. La aprobación exige una cuenta distinta y al menos una obligación vinculada. Las versiones aprobadas no pueden modificarse. El historial identifica autor y aprobador. Ejecuta `private/upgrade-021.sql` después de 020, y concede SELECT e INSERT en `compliance_policies`, SELECT e INSERT y UPDATE en `compliance_policy_versions`, SELECT e INSERT en `compliance_policy_obligations`. La funcionalidad no reemplaza una aprobación legal de las políticas internas.
+
+## Pruebas HTTP de acceso (integración continua)
+
+Además de las pruebas de integración con MySQL, GitHub Actions inicia un servidor PHP temporal con una base `auditpro_test` y verifica la pantalla de inicio de sesión, el login de un auditor, la denegación de vistas administrativas, la protección CSRF y la imposibilidad de descargar SQL privados desde la raíz pública. El entorno de prueba utiliza exclusivamente datos ficticios y se destruye al finalizar. Esto no reemplaza la revisión de accesibilidad ni un piloto en el servidor de cliente.
 
 ## XAMPP en localhost
 
