@@ -1,0 +1,53 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+BASE_URL="${AUDITPRO_HTTP_URL:-http://127.0.0.1:8787}"
+tmp="$(mktemp -d)"
+trap 'rm -rf "$tmp"' EXIT
+cookies="$tmp/cookies.txt"
+
+# Página pública de acceso, cookie de sesión y CSRF generado por servidor real.
+curl --fail --silent --show-error -c "$cookies" "$BASE_URL/index.php" > "$tmp/login.html"
+grep -q 'Iniciar sesión' "$tmp/login.html"
+csrf="$(grep -o 'name="csrf" value="[^"]*"' "$tmp/login.html" | head -n1 | cut -d '"' -f 4)"
+test -n "$csrf"
+
+curl --silent --show-error -b "$cookies" -c "$cookies" -D "$tmp/headers.txt" \
+  -o "$tmp/post.html" \
+  --data-urlencode "csrf=$csrf" \
+  --data-urlencode 'op=login' \
+  --data-urlencode 'email=auditor@example.test' \
+  --data-urlencode 'password=TestPass123456!' \
+  "$BASE_URL/index.php"
+grep -Eq '^HTTP/1\.[01] 303|^HTTP/1\.[01] 302' "$tmp/headers.txt"
+curl --fail --silent --show-error -b "$cookies" "$BASE_URL/index.php" > "$tmp/auditor.html"
+grep -q 'Plan y expedientes' "$tmp/auditor.html"
+
+# La navegación manual a vistas administrativas tampoco debe revelar sus contenidos.
+curl --fail --silent --show-error -b "$cookies" "$BASE_URL/index.php?view=policies" > "$tmp/blocked-policies.html"
+if grep -q 'Políticas internas y versiones' "$tmp/blocked-policies.html"; then
+  echo 'ERROR: acceso de auditor al catálogo de políticas' >&2
+  exit 1
+fi
+curl --fail --silent --show-error -b "$cookies" "$BASE_URL/index.php?view=unit-access" > "$tmp/blocked-units.html"
+if grep -q 'Permisos por unidad auditable' "$tmp/blocked-units.html"; then
+  echo 'ERROR: acceso de auditor a permisos de unidad' >&2
+  exit 1
+fi
+curl --fail --silent --show-error -b "$cookies" "$BASE_URL/index.php?view=retention" > "$tmp/blocked-retention.html"
+if grep -q 'Retención de evidencias' "$tmp/blocked-retention.html"; then
+  echo 'ERROR: acceso de auditor a retención' >&2
+  exit 1
+fi
+
+# Un formulario sin CSRF válido no debe ejecutar mutaciones.
+curl --fail --silent --show-error -b "$cookies" \
+  --data-urlencode 'csrf=no-es-valido' --data-urlencode 'op=password' \
+  "$BASE_URL/index.php" > "$tmp/invalid-csrf.html"
+grep -q 'La sesión del formulario venció' "$tmp/invalid-csrf.html"
+
+# Los archivos privados nunca deben exponerse como recursos web.
+status="$(curl --silent --output /dev/null --write-out '%{http_code}' "$BASE_URL/private/schema.sql")"
+test "$status" = 404
+
+echo 'OK: inicio de sesión HTTP, aislamiento de módulos, CSRF y raíz pública.'
