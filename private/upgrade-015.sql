@@ -1,0 +1,23 @@
+CREATE TABLE IF NOT EXISTS obligation_exceptions (
+ id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+ obligation_id BIGINT UNSIGNED NOT NULL,
+ requested_by BIGINT UNSIGNED NOT NULL,
+ title VARCHAR(180) NOT NULL,
+ rationale TEXT NOT NULL,
+ mitigating_controls TEXT NOT NULL,
+ expires_on DATE NOT NULL,
+ status ENUM('pendiente','aprobada','rechazada','cerrada') NOT NULL DEFAULT 'pendiente',
+ created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+ decided_by BIGINT UNSIGNED NULL,
+ decided_at TIMESTAMP NULL DEFAULT NULL,
+ decision_note TEXT NULL,
+ closed_by BIGINT UNSIGNED NULL,
+ closed_at TIMESTAMP NULL DEFAULT NULL,
+ closure_note TEXT NULL,
+ INDEX idx_exception_obligation (obligation_id,status),
+ INDEX idx_exception_expiry (status,expires_on),
+ FOREIGN KEY(obligation_id) REFERENCES grc_obligations(id),
+ FOREIGN KEY(requested_by) REFERENCES users(id),
+ FOREIGN KEY(decided_by) REFERENCES users(id),
+ FOREIGN KEY(closed_by) REFERENCES users(id)
+) ENGINE=InnoDB;
