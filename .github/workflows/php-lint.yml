@@ -122,3 +122,13 @@ jobs:
             sleep 1
           done
           bash tests/http-smoke.sh
+      - name: Probar proceso diario de avisos desde CLI con datos ficticios
+        env:
+          AUDITPRO_CONFIG: ${{ runner.temp }}/auditpro-test-config.php
+        run: |
+          set -euo pipefail
+          php private/remind.php --dry-run
+          php private/remind.php
+          php private/remind.php
+          mysql --protocol=tcp --host=127.0.0.1 --port=3306 --user=root --password=testpass --batch --skip-column-names auditpro_test \
+            -e "SELECT successful_runs>=2 FROM scheduled_job_runs WHERE job_key='reminders'" | grep -qx 1
