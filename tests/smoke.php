@@ -49,7 +49,7 @@ $auditor = ['id'=>3,'role'=>'auditor'];
 $responsable = ['id'=>4,'role'=>'responsable'];
 $_POST = ['title'=>'Conciliaciones','category'=>'Finanzas','procedure'=>'Comparar saldos y documentar las diferencias'];
 saveTemplate($pdo,$supervisor,'template_create');
-$templateId = (int) $pdo->lastInsertId();
+$templateId = (int)query($pdo,'SELECT id FROM test_templates WHERE title=?',['Conciliaciones'])->fetchColumn();
 check($templateId > 0,'Supervisión crea plantilla');
 deny(static fn() => saveTemplate($pdo,$auditor,'template_create'),'Auditor no puede crear plantilla');
 query($pdo,"INSERT INTO audits(title,entity,objective,year,risk,owner_id,status) VALUES ('Auditoría anual','Finanzas','Evaluar controles',?,'alto',?,'en_campo')",
@@ -68,7 +68,7 @@ check((bool)query($pdo,'SELECT id FROM tests WHERE id=?',[$test['id']])->fetchCo
 
 $_POST=['audit_id'=>(string)$auditId,'subject'=>'Actas','description'=>'Adjuntar actas de conciliación','due'=>date('Y-m-d',strtotime('+5 days'))];
 saveEvidenceRequest($pdo,$supervisor,'request_create');
-$requestId=(int)$pdo->lastInsertId();
+$requestId=(int)query($pdo,'SELECT id FROM evidence_requests WHERE audit_id=? ORDER BY id DESC LIMIT 1',[$auditId])->fetchColumn();
 check($requestId>0,'Supervisión crea solicitud');
 $_POST=['audit_id'=>(string)$auditId,'request_id'=>(string)$requestId,'answer'=>'Ver expediente de respaldo'];
 deny(static fn()=>saveEvidenceRequest($pdo,$responsable,'request_answer'),'Responsable no puede responder solicitud');
