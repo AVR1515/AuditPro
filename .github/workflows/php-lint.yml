@@ -20,6 +20,8 @@ jobs:
           grep -q "upgrade-012.sql" public/install.php
           grep -q "upgrade-013.sql" public/install.php
           grep -q "upgrade-014.sql" public/install.php
+          grep -q "upgrade-015.sql" public/install.php
+          grep -q "exceptions.php" public/index.php
           grep -q "attestations.php" public/index.php
           grep -q "risk-acceptance.php" public/index.php
           grep -q "capacity.php" public/index.php
