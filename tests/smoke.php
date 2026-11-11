@@ -22,6 +22,7 @@ require __DIR__ . '/../private/reminders.php';
 require __DIR__ . '/../private/unit-access.php';
 require __DIR__ . '/../private/overview.php';
 require __DIR__ . '/../private/retention.php';
+require __DIR__ . '/../private/preflight.php';
 
 function check(bool $ok, string $message): void {
     if (!$ok) throw new RuntimeException('FALLÓ: ' . $message);
@@ -367,4 +368,21 @@ check($purged['sha256']===hash('sha256','ABCDE') && $purged['purged_at']!==null,
  'Huella y fecha de purga permanecen');
 check((int)query($pdo,"SELECT COUNT(*) FROM audit_log WHERE event='evidencia_purgada'")->fetchColumn()===1,
  'Purga deja bitácora rastreable');
+
+// Diagnóstico de preparación: detecta instalaciones incompletas sin modificar datos.
+query($pdo,'INSERT INTO installation(id) VALUES (1)');
+$privatePath=realpath(__DIR__.'/../private/config.example.php');
+check(is_string($privatePath) && $privatePath!=='','Archivo privado de configuración de muestra localizable');
+putenv('AUDITPRO_CONFIG='.$privatePath);
+$diagnostics=preflightChecks($pdo,[
+ 'user'=>'test_runner','password'=>'fake_local_only',
+ 'install_user'=>'','install_password'=>'','install_token'=>''
+]);
+check(preflightReady($diagnostics),'Preflight confirma migraciones 019 y 020 y entorno de pruebas');
+$missing=preflightChecks($pdo,[
+ 'user'=>'test_runner','password'=>'fake_local_only',
+ 'install_user'=>'','install_password'=>'','install_token'=>'token-pendiente'
+]);
+check(!preflightReady($missing),'Preflight detecta instalador no deshabilitado');
+putenv('AUDITPRO_CONFIG');
 echo "TODAS LAS PRUEBAS DE HUMO PASARON.\n";
