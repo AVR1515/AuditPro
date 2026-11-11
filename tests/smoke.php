@@ -304,6 +304,9 @@ check($dashboard['gaps']===0,'Tablero no marca brecha en auditoría del año act
 
 // Escalamiento por días: política administrativa, idempotencia, cierre y prórroga.
 $today=new DateTimeImmutable('today');
+$candidatePreview=reminderCandidates($pdo,new DateTimeImmutable('today'));
+check(array_key_exists('overdue',$candidatePreview) && array_key_exists('approaching',$candidatePreview),
+ 'Previsualización de recordatorios no requiere crear notificaciones');
 check((int)escalationPolicy($pdo)['enabled']===0,'Escalamiento comienza desactivado');
 $_POST=['enabled'=>'1','overdue_days'=>'3'];
 deny(static fn()=>saveEscalationPolicy($pdo,$supervisor),
@@ -521,6 +524,10 @@ check($purged['sha256']===hash('sha256','ABCDE') && $purged['purged_at']!==null,
  'Huella y fecha de purga permanecen');
 check((int)query($pdo,"SELECT COUNT(*) FROM audit_log WHERE event='evidencia_purgada'")->fetchColumn()===1,
  'Purga deja bitácora rastreable');
+$retentionStats=retentionReadiness($pdo,new DateTimeImmutable('today'));
+check((int)$retentionStats['purged']===1 && (int)$retentionStats['total']>=2,
+ 'Retención resume el conjunto completo y el contenido purgado');
+
 
 // Diagnóstico de preparación: detecta instalaciones incompletas sin modificar datos.
 query($pdo,'INSERT INTO installation(id) VALUES (1)');
